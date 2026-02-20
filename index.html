@@ -1222,21 +1222,29 @@ function renderLive(){
     var perc=o.feels_like!=null&&Math.abs(o.feels_like-o.air_temperature)>=1?'Percepita '+o.feels_like.toFixed(1)+'°':'';
     var wind=o.wind_avg!=null?'Vento '+((o.wind_avg*3.6).toFixed(0))+' km/h'+(o.wind_direction!=null?' '+o.wind_direction+'°':''):'';
     var hum=o.relative_humidity!=null?'Umidità '+o.relative_humidity+'%':'';
-    h+=liveCard('Tempest station','#86efac','linear-gradient(135deg,#065f46,#059669)',o.air_temperature.toFixed(1)+'°C',perc,'',wind,hum,ts?'Rilevazione '+ts:'','#86efac');
+    var tLabel=S.tData.station_name||S.tData.public_name||'Tempest station';
+    h+=liveCard(tLabel,'#86efac','linear-gradient(135deg,#065f46,#059669)',o.air_temperature.toFixed(1)+'°C',perc,'',wind,hum,ts?'Aggiornamento '+ts:'','#86efac');
     hasLive=true;
   }
   // LEFT alt: WU (if no Tempest)
   if(!hasLive&&S.wuData&&S.wuData.metric&&S.wuData.metric.temp!=null){
-    var wm=S.wuData.metric;var ts=S.wuData.obsTimeLocal?new Date(S.wuData.obsTimeLocal).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
+    var wm=S.wuData.metric;var ts=S.wuData.epoch?new Date(S.wuData.epoch*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
     var wind=wm.windSpeed!=null?'Vento '+wm.windSpeed.toFixed(0)+' km/h'+(S.wuData.winddir!=null?' '+S.wuData.winddir+'°':''):'';
     var hum=S.wuData.humidity!=null?'Umidità '+S.wuData.humidity+'%':'';
-    h+=liveCard('WU '+(S.wuData.stationID||''),'#fdba74','linear-gradient(135deg,#7c2d12,#c2410c)',wm.temp.toFixed(1)+'°C','',''  ,wind,hum,ts?'Rilevazione '+ts:'','#fdba74');
+    var wLabel=S.wuData.neighborhood||S.wuData.stationID||'Weather Underground';
+    h+=liveCard(wLabel,'#fdba74','linear-gradient(135deg,#7c2d12,#c2410c)',wm.temp.toFixed(1)+'°C','','',wind,hum,ts?'Aggiornamento '+ts:'','#fdba74');
     hasLive=true;
   }
   // CENTER: Open-Meteo current
   if(S.current&&S.current.temperature_2m!=null){
     var c=S.current;
-    var ts=c.time?new Date(c.time).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
+    var ts='';
+    if(c.time){
+      // c.time is "YYYY-MM-DDTHH:MM" in city timezone; convert to UTC then to reader-local
+      var p=c.time.split(/[-T:]/);
+      var utcMs=Date.UTC(+p[0],p[1]-1,+p[2],+p[3],+(p[4]||0))-(S.data&&S.data.utc_offset_seconds||0)*1000;
+      ts=new Date(utcMs).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+    }
     var perc=c.apparent_temperature!=null&&Math.abs(c.apparent_temperature-c.temperature_2m)>=1?'Percepita '+c.apparent_temperature.toFixed(1)+'°':'';
     var wx=wI(c.weather_code)+' '+wD(c.weather_code);
     var wind='Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':'');
@@ -1253,7 +1261,7 @@ function renderLive(){
     var wxM=mWxD(S.mData.wxString)||mCloudD(S.mData.clouds)||'';
     var windM=S.mData.wspd!=null?'Vento '+(S.mData.wspd*1.852).toFixed(0)+' km/h'+(S.mData.wdir!=null?' '+S.mData.wdir+'°':''):'';
     var humM='';
-    h+=liveCard(mName,'#c4b5fd','linear-gradient(135deg,#4c1d95,#7c3aed)',S.mData.temp.toFixed(1)+'°C',perc,wxM,windM,humM,ts?'Rilevazione '+ts:'','#c4b5fd');
+    h+=liveCard(mName,'#c4b5fd','linear-gradient(135deg,#4c1d95,#7c3aed)',S.mData.temp.toFixed(1)+'°C',perc,wxM,windM,humM,ts?'Aggiornamento '+ts:'','#c4b5fd');
     hasLive=true;
   }else if(S.mErr){
     h+='<div class="lt" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;opacity:.4"><div class="ll" style="color:#c4b5fd">METAR</div><div class="lts" style="margin-top:4px">Non disponibile</div></div>';
