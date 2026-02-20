@@ -135,7 +135,8 @@ tbody tr:nth-child(even){background:#fafafa}
 .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin:0 0 12px;padding:0}
 .card>.sec-title{margin-bottom:8px}
 .live-row{display:flex;gap:10px;flex-wrap:wrap}
-.lc{flex:1 1 200px;min-width:180px;border-radius:12px;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:14px}
+.lc{flex:1 1 200px;min-width:180px;border-radius:12px;padding:14px 16px;color:#fff;display:flex;align-items:center;gap:14px;text-decoration:none;transition:opacity .15s}
+a.lc:hover{opacity:.88}
 .lc-icon{font-size:48px;line-height:1;flex-shrink:0}
 .lc-data{flex:1;min-width:0}
 .lc-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1263,15 +1264,16 @@ function showHrPopup(idx){
 }
 function closeHrPopup(){document.getElementById("hrPopup").classList.remove("open");}
 
-function lcBuild(icon,bg,labelClr,label,temp,rows,ts){
-  var h='<div class="lc" style="background:'+bg+'">';
+function lcBuild(icon,bg,labelClr,label,temp,rows,ts,url){
+  var tag=url?'a':'div';
+  var h='<'+tag+' class="lc" style="background:'+bg+'"'+(url?' href="'+url+'" target="_blank" rel="noopener"':'')+'>';
   h+='<div class="lc-icon">'+icon+'</div>';
   h+='<div class="lc-data">';
   h+='<div class="lc-label" style="color:'+labelClr+'">'+label+'</div>';
   h+='<div class="lc-temp">'+temp+'</div>';
   for(var i=0;i<rows.length;i++)h+='<div class="lc-row">'+(rows[i]||'&nbsp;')+'</div>';
   if(ts)h+='<div class="lc-ts" style="color:'+labelClr+'">'+ts+'</div>';
-  h+='</div></div>';
+  h+='</div></'+tag+'>';
   return h;
 }
 function renderLive(){
@@ -1288,7 +1290,8 @@ function renderLive(){
     }
     var perc=c.apparent_temperature!=null&&Math.abs(c.apparent_temperature-c.temperature_2m)>=1?'Percepita '+c.apparent_temperature.toFixed(1)+'°':'';
     var rows=[perc,wD(c.weather_code),'Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':''),'Umidità '+c.relative_humidity_2m+'%'];
-    h+=lcBuild(wI(c.weather_code),'linear-gradient(135deg,#1e40af,#3b82f6)','#93c5fd',S.city.name,c.temperature_2m.toFixed(1)+'°C',rows,ts?'Aggiornamento '+ts:'');
+    var omUrl='https://open-meteo.com/en/docs#latitude='+S.city.lat+'&longitude='+S.city.lon;
+    h+=lcBuild(wI(c.weather_code),'linear-gradient(135deg,#1e40af,#3b82f6)','#93c5fd',S.city.name,c.temperature_2m.toFixed(1)+'°C',rows,ts?'Aggiornamento '+ts:'',omUrl);
     hasLive=true;
   }
   // 2. METAR
@@ -1304,7 +1307,9 @@ function renderLive(){
     if(S.mData.wxString){var wxl=S.mData.wxString;if(wxl.indexOf('TS')>=0)mIcon='⛈️';else if(wxl.indexOf('SN')>=0)mIcon='❄️';else if(wxl.indexOf('RA')>=0||wxl.indexOf('DZ')>=0||wxl.indexOf('SH')>=0)mIcon='🌧️';else if(wxl.indexOf('FG')>=0||wxl.indexOf('BR')>=0)mIcon='🌫️';}
     else if(S.mData.clouds&&S.mData.clouds.length){var top=S.mData.clouds[S.mData.clouds.length-1].cover;if(top==='OVC'||top==='BKN')mIcon='☁️';else if(top==='SCT'||top==='FEW')mIcon='⛅';else mIcon='☀️';}
     else mIcon='☀️';
-    h+=lcBuild(mIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',mName,S.mData.temp.toFixed(1)+'°C',[mPerc,mWx,mWind,''],mTs?'Aggiornamento '+mTs:'');
+    var mIcao=ICAO[S.city.name]||'';
+    var mUrl=mIcao?'https://aviationweather.gov/metar?id='+mIcao:'';
+    h+=lcBuild(mIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',mName,S.mData.temp.toFixed(1)+'°C',[mPerc,mWx,mWind,''],mTs?'Aggiornamento '+mTs:'',mUrl);
     hasLive=true;
   }
   // 3. Tempest
@@ -1316,7 +1321,9 @@ function renderLive(){
     var tHum=o.relative_humidity!=null?'Umidità '+o.relative_humidity+'%':'';
     var tLabel=S.tData.public_name||S.tData.station_name||'Tempest';
     var twc=tWx(o,S.city.lat);var tIcon=twc!=null?wI(twc):'🌡️';var tWxD=twc!=null?wD(twc):'';
-    h+=lcBuild(tIcon,'linear-gradient(135deg,#4c1d95,#7c3aed)','#c4b5fd',tLabel,o.air_temperature.toFixed(1)+'°C',[tPerc,tWxD,tWind,tHum],tTs?'Aggiornamento '+tTs:'');
+    var tStaId=loadTC().sta||'';
+    var tUrl=tStaId?'https://tempestwx.com/station/'+tStaId:'';
+    h+=lcBuild(tIcon,'linear-gradient(135deg,#4c1d95,#7c3aed)','#c4b5fd',tLabel,o.air_temperature.toFixed(1)+'°C',[tPerc,tWxD,tWind,tHum],tTs?'Aggiornamento '+tTs:'',tUrl);
     hasLive=true;
   }
   // 4. WU (multiple stations)
@@ -1329,17 +1336,18 @@ function renderLive(){
     var wHum=wd.humidity!=null?'Umidità '+wd.humidity+'%':'';
     var wLabel=wd.neighborhood||wd.stationID||'Weather Underground';
     var wwc=wuWx(wd,S.city.lat);var wIcon=wwc!=null?wI(wwc):'🌡️';var wWxD=wwc!=null?wD(wwc):'';
-    h+=lcBuild(wIcon,'linear-gradient(135deg,#7c2d12,#c2410c)','#fdba74',wLabel,wm.temp.toFixed(1)+'°C',['',wWxD,wWind,wHum],wTs?'Aggiornamento '+wTs:'');
+    var wuUrl=wd.stationID?'https://www.wunderground.com/dashboard/pws/'+wd.stationID:'';
+    h+=lcBuild(wIcon,'linear-gradient(135deg,#7c2d12,#c2410c)','#fdba74',wLabel,wm.temp.toFixed(1)+'°C',['',wWxD,wWind,wHum],wTs?'Aggiornamento '+wTs:'',wuUrl);
     hasLive=true;
   }
   h+='</div>';
   // Legend
   h+='<div class="lc-leg">';
   h+='<span style="font-weight:600">Fonti:</span>';
-  h+='<span><i style="background:#3b82f6"></i>Open-Meteo</span>';
+  h+='<span><i style="background:#3b82f6"></i>Modello meteo</span>';
   h+='<span><i style="background:#059669"></i>Aeroporto più vicino</span>';
   h+='<span><i style="background:#7c3aed"></i>Tempest</span>';
-  h+='<span><i style="background:#c2410c"></i>WU</span>';
+  h+='<span><i style="background:#c2410c"></i>Weather Underground</span>';
   h+='</div>';
   var el=document.getElementById("liveCard");var sl=document.getElementById("secLive");
   if(hasLive){sl.style.display="block";el.style.display="block";document.getElementById("liveContent").innerHTML=h;}
