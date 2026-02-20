@@ -12,8 +12,9 @@ const TEMPEST_TOKEN = process.env.TEMPEST_TOKEN || "";
 
 // Station defaults per city (server-side, keys stay hidden)
 const STATION_DEFAULTS = {
-  "Milano": { tempest: "195317", wu: "IMILAN5976" },
-  "Boston": { wu: "KMABOSTO391" }
+  "Milano": { tempest: "195317", wu: ["IMILAN5976"] },
+  "Bormio": { wu: ["IGROSI31", "ISONDA1"] },
+  "Boston": { wu: ["KMABOSTO391"] }
 };
 
 function proxyGet(targetUrl, res, maxRedirects) {

@@ -132,7 +132,6 @@ tbody tr:nth-child(even){background:#fafafa}
 .meth-box hr{border:none;height:1px;background:linear-gradient(90deg,transparent,#cbd5e1,transparent);margin:24px 0}
 .meth-box em{color:#475569;font-size:13px}
 .meth-loading{text-align:center;padding:48px 0;color:#94a3b8;font-size:14px}
-.liverow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 8px}
 .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin:0 0 12px;padding:0}
 .card>.sec-title{margin-bottom:8px}
 .live-row{display:flex;gap:12px;flex-wrap:wrap}
@@ -145,18 +144,6 @@ tbody tr:nth-child(even){background:#fafafa}
 .lc-ts{font-size:9px;margin-top:5px}
 @media(max-width:900px){.lc{flex:1 1 45%}}
 @media(max-width:500px){.lc{flex:1 1 100%}}
-.lt{border-radius:10px;padding:14px 16px;text-align:center;font-size:13px}
-.lt .lv{font-size:28px;font-weight:700;margin:4px 0}
-.lt .ll{font-size:12px;font-weight:600;margin-bottom:2px}
-.lt .lts{font-size:10px;opacity:.85;margin-top:4px}
-.lt-t{background:linear-gradient(135deg,#1e3a5f,#2d5a87);color:#fff}
-.lt-t .ll{color:#93c5fd}
-.lt-m{background:linear-gradient(135deg,#14532d,#166534);color:#fff}
-.lt-m .ll{color:#86efac}
-.lt-cfg{background:#f1f5f9;border:2px dashed #cbd5e1;color:#64748b;cursor:pointer}
-.lt-cfg:hover{border-color:#3b82f6;color:#374151}
-.lt-cfg .lv{font-size:16px;font-weight:600}
-.lt-cfg .ll{color:#94a3b8}
 .ca{color:#16a34a;background:#dcfce7}
 .cm{color:#ca8a04;background:#fef9c3}
 .cl{color:#dc2626;background:#fee2e2}
@@ -311,15 +298,12 @@ tbody tr:nth-child(even){background:#fafafa}
   .spnl label{color:#cbd5e1}
   .spnl input{background:#0f172a;border-color:#475569;color:#e2e8f0}
   td{color:#e2e8f0}
-  .lt-cfg{background:#1e293b;border-color:#475569;color:#94a3b8}
-  .lt-cfg:hover{border-color:#3b82f6;color:#cbd5e1}
   .hc-hr{color:#e2e8f0}
   .hc-val{color:#e2e8f0}
   .hc-title{color:#e2e8f0}
   .hc-legend{color:#e2e8f0}
   .aff-badge{background:rgba(255,255,255,0.07);border-color:rgba(255,255,255,0.12)}
   .wind-tog{background:#0ea5e9;color:#fff;border-color:#0ea5e9}
-  .lt-cfg .ll{color:#64748b}
 }
 </style>
 </head>
@@ -358,7 +342,7 @@ tbody tr:nth-child(even){background:#fafafa}
   <div class="stog" id="wuTogEl" onclick="document.getElementById('wuPnl').classList.toggle('open')">⚙ Configura stazione Weather Underground</div>
   <div class="spnl" id="wuPnl">
     <label>Station ID</label>
-    <input type="text" id="wuSta" placeholder="Es: KMABOSTO391">
+    <input type="text" id="wuSta" placeholder="Es: KMABOSTO391 (più stazioni: ID1, ID2)">
     <button onclick="saveWU()">Salva e collega</button>
     <span id="wuSts" style="font-size:11px;color:#6b7280;margin-left:8px"></span>
   </div>
@@ -530,6 +514,7 @@ var MODELS=[
 var CITIES=[
   {name:"Milano",lat:45.4642,lon:9.19},
   {name:"Boston",lat:42.3601,lon:-71.0589},
+  {name:"Bormio",lat:46.4685,lon:10.3710},
   {name:"Bressanone",lat:46.7153,lon:11.6563},
   {name:"Chamonix",lat:45.9237,lon:6.8694},
   {name:"Chioggia",lat:45.2193,lon:12.2787},
@@ -553,7 +538,7 @@ var ICAO={Milano:"LIML",Garbagnate:"LIMC",Roma:"LIRF",Manduria:"LIBR","San Pietr
 
 var DLBL=["Oggi","Domani","+2gg","+3gg","+4gg","+5gg","+6gg","+7gg","+8gg"];
 
-var S={city:CITIES[0],data:null,current:null,day:0,view:"s",tData:null,tFc:null,wuData:null,wuStaId:null,mData:null,mErr:null,weights:null,calStatus:null,showWind:false};
+var S={city:CITIES[0],data:null,current:null,day:0,view:"s",tData:null,tFc:null,wuData:[],mData:null,mErr:null,weights:null,calStatus:null,showWind:false};
 var stm=null;
 
 function wI(c){if(c==null)return"--";if(c===0)return"☀️";if(c<=3)return"⛅";if(c<=48)return"🌫️";if(c<=57)return"🌦️";if(c<=65)return"🌧️";if(c<=75)return"❄️";if(c<=82)return"🌧️";if(c<=99)return"⛈️";return"🌤️";}
@@ -606,6 +591,20 @@ function tWx(obs,lat){
     return 0; // clear night (best guess)
   }
   return 2; // default: partly cloudy
+}
+function wuWx(d,lat){
+  if(!d||!d.metric)return null;
+  var m=d.metric;
+  // map WU fields to the same shape tWx expects
+  var obs={
+    lightning_strike_count:0,precip_type:0,
+    precip:m.precipRate!=null?m.precipRate:0,
+    air_temperature:m.temp,
+    solar_radiation:d.solarRadiation!=null?d.solarRadiation:null,
+    relative_humidity:d.humidity!=null?d.humidity:null,
+    timestamp:d.epoch||null
+  };
+  return tWx(obs,lat);
 }
 function r1(v){return v!=null&&!isNaN(v)?Math.round(v*10)/10:"--";}
 function st(vals,wts){
@@ -681,25 +680,27 @@ function saveWU(){
 }
 function loadWUC(){
   var s=localStorage.getItem("wu_sta_"+S.city.name)||"";
-  return{sta:s};
+  return s?s.split(",").map(function(x){return x.trim();}).filter(Boolean):[];
 }
 function fetchWU(){
-  var c=loadWUC();if(!c.sta){S.wuData=null;return;}
-  console.log("WU fetch:",c.sta);
-  fetch("/api/wu?stationId="+encodeURIComponent(c.sta))
-    .then(function(r){return r.json().then(function(j){return{ok:r.ok,status:r.status,data:j};});})
-    .then(function(res){
-      console.log("WU response:",res.status,JSON.stringify(res.data).substring(0,200));
-      if(res.ok&&res.data&&res.data.observations&&res.data.observations.length>0){
-        S.wuData=res.data.observations[0];S.wuStaId=c.sta;
-        renderLive();
-        if(S.data)renderDt();
-      }else{
-        console.warn("WU: no observations or error",res.status,res.data);
-        S.wuData=null;
-      }
-    })
-    .catch(function(e){console.error("WU fetch err:",e);S.wuData=null;});
+  var ids=loadWUC();if(!ids.length){S.wuData=[];return;}
+  console.log("WU fetch:",ids);
+  S.wuData=[];
+  var done=0;
+  ids.forEach(function(sta){
+    fetch("/api/wu?stationId="+encodeURIComponent(sta))
+      .then(function(r){return r.json().then(function(j){return{ok:r.ok,status:r.status,data:j};});})
+      .then(function(res){
+        if(res.ok&&res.data&&res.data.observations&&res.data.observations.length>0){
+          S.wuData.push(res.data.observations[0]);
+        }
+      })
+      .catch(function(e){console.error("WU fetch err:",sta,e);})
+      .finally(function(){
+        done++;
+        if(done===ids.length){renderLive();if(S.data)renderDt();}
+      });
+  });
 }
 
 // METAR
@@ -915,7 +916,7 @@ function fetchAll(){
   document.getElementById("erEl").style.display="none";
   document.getElementById("cnt").style.display="none";
   renderCB();
-  S.tData=null;S.tFc=null;S.wuData=null;S.current=null;S.weights=null;S.calStatus=null;
+  S.tData=null;S.tFc=null;S.wuData=[];S.current=null;S.weights=null;S.calStatus=null;
   calibrate();
   // Fetch server-side station defaults, then init stations
   fetch("/api/stations?city="+encodeURIComponent(S.city.name))
@@ -930,15 +931,15 @@ function fetchAll(){
       document.getElementById("stogEl").style.display=tFromLS?"block":"none";
       document.getElementById("spnl").classList.remove("open");
       if(hasT){fetchT();}
-      // WU: server default or localStorage
+      // WU: server default (array) or localStorage (comma-separated)
       var wStaLS=localStorage.getItem("wu_sta_"+S.city.name)||"";
-      var wSta=wStaLS||srv.wu||"";
-      if(wSta){loadWUC=function(){return{sta:wSta};};} // override for this session
-      var hasW=!!wSta;
+      var wArr=wStaLS?wStaLS.split(",").map(function(x){return x.trim();}).filter(Boolean):(srv.wu||[]);
+      if(wArr.length){loadWUC=function(){return wArr;};}
+      var hasW=wArr.length>0;
       var wFromLS=!!wStaLS;
       document.getElementById("wuTogEl").style.display=wFromLS?"block":"none";
       document.getElementById("wuPnl").classList.remove("open");
-      if(wSta){document.getElementById("wuSta").value=wSta;}
+      if(wArr.length){document.getElementById("wuSta").value=wArr.join(", ");}
       if(hasW){fetchWU();}
     })
     .catch(function(e){
@@ -946,7 +947,7 @@ function fetchAll(){
       var tc=loadTC();var hasT=!!tc.sta;
       document.getElementById("stogEl").style.display=hasT?"block":"none";
       if(hasT)fetchT();
-      var wc=loadWUC();var hasW=!!wc.sta;
+      var wIds=loadWUC();var hasW=wIds.length>0;
       document.getElementById("wuTogEl").style.display=hasW?"block":"none";
       if(hasW)fetchWU();
     });
@@ -1312,14 +1313,17 @@ function renderLive(){
     h+=lcBuild(tIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',tLabel,o.air_temperature.toFixed(1)+'°C',[tPerc,tWxD,tWind,tHum],tTs?'Aggiornamento '+tTs:'');
     hasLive=true;
   }
-  // 4. WU
-  if(S.wuData&&S.wuData.metric&&S.wuData.metric.temp!=null){
-    var wm=S.wuData.metric;
-    var wTs=S.wuData.epoch?new Date(S.wuData.epoch*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
-    var wWind=wm.windSpeed!=null?'Vento '+wm.windSpeed.toFixed(0)+' km/h'+(S.wuData.winddir!=null?' '+S.wuData.winddir+'°':''):'';
-    var wHum=S.wuData.humidity!=null?'Umidità '+S.wuData.humidity+'%':'';
-    var wLabel=S.wuData.neighborhood||S.wuData.stationID||'Weather Underground';
-    h+=lcBuild('🌡️','linear-gradient(135deg,#7c2d12,#c2410c)','#fdba74',wLabel,wm.temp.toFixed(1)+'°C',['',''  ,wWind,wHum],wTs?'Aggiornamento '+wTs:'');
+  // 4. WU (multiple stations)
+  for(var wi=0;wi<S.wuData.length;wi++){
+    var wd=S.wuData[wi];
+    if(!wd||!wd.metric||wd.metric.temp==null)continue;
+    var wm=wd.metric;
+    var wTs=wd.epoch?new Date(wd.epoch*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
+    var wWind=wm.windSpeed!=null?'Vento '+wm.windSpeed.toFixed(0)+' km/h'+(wd.winddir!=null?' '+wd.winddir+'°':''):'';
+    var wHum=wd.humidity!=null?'Umidità '+wd.humidity+'%':'';
+    var wLabel=wd.neighborhood||wd.stationID||'Weather Underground';
+    var wwc=wuWx(wd,S.city.lat);var wIcon=wwc!=null?wI(wwc):'🌡️';var wWxD=wwc!=null?wD(wwc):'';
+    h+=lcBuild(wIcon,'linear-gradient(135deg,#7c2d12,#c2410c)','#fdba74',wLabel,wm.temp.toFixed(1)+'°C',['',wWxD,wWind,wHum],wTs?'Aggiornamento '+wTs:'');
     hasLive=true;
   }
   h+='</div>';
@@ -1328,7 +1332,7 @@ function renderLive(){
   else{sl.style.display="none";el.style.display="none";}
 }
 function renderAll(){renderLive();renderDt();renderWk();renderHourly();
-  document.getElementById("ftEl").innerHTML='Dati: Open-Meteo API · Provider: ECMWF IFS, ECMWF AIFS, GFS, ICON, Météo-France, JMA, GEM, UKMO, ItaliaMeteo ARPAE, KNMI, MeteoSwiss, DMI, MET Norway'+(S.tData?' + Tempest':'')+(S.wuData?' + WU PWS':'')+'<br>METAR: aviationweather.gov (stazioni Aeronautica Militare)<br>'+S.city.lat.toFixed(4)+'°N, '+S.city.lon.toFixed(4)+'°E';
+  document.getElementById("ftEl").innerHTML='Dati: Open-Meteo API · Provider: ECMWF IFS, ECMWF AIFS, GFS, ICON, Météo-France, JMA, GEM, UKMO, ItaliaMeteo ARPAE, KNMI, MeteoSwiss, DMI, MET Norway'+(S.tData?' + Tempest':'')+(S.wuData.length?' + WU PWS':'')+'<br>METAR: aviationweather.gov (stazioni Aeronautica Militare)<br>'+S.city.lat.toFixed(4)+'°N, '+S.city.lon.toFixed(4)+'°E';
 }
 function renderWk(){
   document.getElementById("wkCard").style.display="block";
@@ -1411,17 +1415,18 @@ function renderCmp(){
     h+='<td style="text-align:center">'+r1(tf.wind)+'</td>';
     h+='<td style="text-align:center">'+r1(tf.prob)+'</td></tr>';
   }
-  // WU PWS row (only day 0)
-  if(d===0&&S.wuData&&S.wuData.metric&&S.wuData.metric.temp!=null){
-    var wm=S.wuData.metric;
-    h+='<tr style="background:linear-gradient(90deg,#fff7ed,#ffedd5)"><td><div class="mn" style="color:#7c2d12">WU '+(S.wuData.stationID||"")+ ' <span style="display:inline-block;background:#7c2d12;color:#fdba74;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-left:4px">LIVE</span></div><div class="mm">Weather Underground PWS</div></td>';
+  // WU PWS rows (only day 0, one per station)
+  if(d===0){for(var wri=0;wri<S.wuData.length;wri++){
+    var wrd=S.wuData[wri];if(!wrd||!wrd.metric||wrd.metric.temp==null)continue;
+    var wrm=wrd.metric;
+    h+='<tr style="background:linear-gradient(90deg,#fff7ed,#ffedd5)"><td><div class="mn" style="color:#7c2d12">WU '+(wrd.stationID||"")+ ' <span style="display:inline-block;background:#7c2d12;color:#fdba74;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-left:4px">LIVE</span></div><div class="mm">Weather Underground PWS</div></td>';
     h+='<td style="text-align:center">--</td>';
-    h+='<td style="text-align:center;font-weight:600;color:#ef4444">'+r1(wm.temp)+'</td>';
+    h+='<td style="text-align:center;font-weight:600;color:#ef4444">'+r1(wrm.temp)+'</td>';
     h+='<td style="text-align:center">--</td>';
-    h+='<td style="text-align:center">'+r1(wm.precipTotal)+'mm</td>';
-    h+='<td style="text-align:center">'+r1(wm.windSpeed)+'</td>';
+    h+='<td style="text-align:center">'+r1(wrm.precipTotal)+'mm</td>';
+    h+='<td style="text-align:center">'+r1(wrm.windSpeed)+'</td>';
     h+='<td style="text-align:center">--</td></tr>';
-  }
+  }}
   h+='</tbody></table></div>';
   document.getElementById("cV").innerHTML=h;
 }
