@@ -172,7 +172,6 @@ a.lc:hover{opacity:.88}
 .spnl label{font-size:12px;font-weight:600;color:#374151;display:block;margin-bottom:4px}
 .spnl input{width:100%;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:12px;margin-bottom:8px;outline:none}
 .spnl button{padding:6px 16px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
-.ttag{display:inline-block;background:#1e3a5f;color:#7dd3fc;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;margin-left:4px}
 @media(max-width:600px){
   .mg{grid-template-columns:1fr 1fr}
   .wg{gap:4px}
@@ -338,13 +337,6 @@ a.lc:hover{opacity:.88}
     </div>
   </div>
 
-  <div class="stog" id="stogEl" onclick="document.getElementById('spnl').classList.toggle('open')">⚙ Configura stazione Tempest</div>
-  <div class="spnl" id="spnl">
-    <label>Station ID</label>
-    <input type="text" id="tSta" placeholder="Es: 195317">
-    <button onclick="saveTempest()">Salva e collega</button>
-    <span id="tSts" style="font-size:11px;color:#6b7280;margin-left:8px"></span>
-  </div>
   <div class="stog" id="wuTogEl" onclick="document.getElementById('wuPnl').classList.toggle('open')">⚙ Configura stazione Weather Underground</div>
   <div class="spnl" id="wuPnl">
     <label>Station ID</label>
@@ -545,13 +537,13 @@ var ICAO={Milano:"LIML",Garbagnate:"LIMC",Roma:"LIRF",Manduria:"LIBR","San Pietr
 
 var DLBL=["Oggi","Domani","+2gg","+3gg","+4gg","+5gg","+6gg","+7gg","+8gg"];
 
-var S={city:CITIES[0],data:null,current:null,day:0,view:"s",tData:null,tFc:null,wuData:[],mData:null,mErr:null,weights:null,calStatus:null,showWind:false};
+var S={city:CITIES[0],data:null,current:null,day:0,view:"s",wuData:[],mData:null,mErr:null,weights:null,calStatus:null,showWind:false};
 var stm=null;
 
 function wI(c){if(c==null)return"--";if(c===0)return"☀️";if(c<=3)return"⛅";if(c<=48)return"🌫️";if(c<=57)return"🌦️";if(c<=65)return"🌧️";if(c<=75)return"❄️";if(c<=82)return"🌧️";if(c<=99)return"⛈️";return"🌤️";}
 function wD(c){if(c==null)return"N/D";if(c===0)return"Sereno";if(c<=3)return"Parz. nuvoloso";if(c<=48)return"Nebbia";if(c<=57)return"Pioviggine";if(c<=65)return"Pioggia";if(c<=75)return"Neve";if(c<=82)return"Rovesci";if(c<=99)return"Temporale";return"Variabile";}
-// Derive WMO weather code from Tempest sensor readings
-function tWx(obs,lat){
+// Derive WMO weather code from sensor readings (solar radiation, precip, humidity)
+function sensorWx(obs,lat){
   if(!obs)return null;
   // 1. Thunderstorm
   if(obs.lightning_strike_count>0){
@@ -602,7 +594,7 @@ function tWx(obs,lat){
 function wuWx(d,lat){
   if(!d||!d.metric)return null;
   var m=d.metric;
-  // map WU fields to the same shape tWx expects
+  // map WU fields to the same shape sensorWx expects
   var obs={
     lightning_strike_count:0,precip_type:0,
     precip:m.precipRate!=null?m.precipRate:0,
@@ -611,7 +603,7 @@ function wuWx(d,lat){
     relative_humidity:d.humidity!=null?d.humidity:null,
     timestamp:d.epoch||null
   };
-  return tWx(obs,lat);
+  return sensorWx(obs,lat);
 }
 function r1(v){return v!=null&&!isNaN(v)?Math.round(v*10)/10:"--";}
 function st(vals,wts){
@@ -638,42 +630,10 @@ function syn(day){
   var co=MODELS.map(function(m){return gm(m.id,"weather_code",day);});
   var pb=MODELS.map(function(m){return gm(m.id,"precipitation_probability_max",day);});
   var wts=MODELS.map(function(m){return S.weights&&S.weights[m.id]!=null?S.weights[m.id]:1;});
-  var tf=getTF(day);
-  if(tf){if(tf.tmax!=null){tMx.push(tf.tmax);wts.push(1.2);}if(tf.tmin!=null){tMn.push(tf.tmin);wts.push(1.2);}if(tf.wind!=null){wi.push(tf.wind);wts.push(1);}}
   var vc=co.filter(function(c){return c!=null;});
   var freq={};vc.forEach(function(c){freq[c]=(freq[c]||0)+1;});
   var dom=null,mf=0;Object.keys(freq).forEach(function(k){if(freq[k]>mf){mf=freq[k];dom=Number(k);}});
   return{tMax:st(tMx,wts),tMin:st(tMn,wts),prec:st(pr,wts),snow:st(sf,wts),wind:st(wi,wts),prob:st(pb,wts),dom:dom};
-}
-
-// Tempest
-function saveTempest(){
-  var sta=document.getElementById("tSta").value.trim();
-  if(!sta){document.getElementById("tSts").textContent="Inserisci Station ID";return;}
-  localStorage.setItem("t_sta_"+S.city.name,sta);
-  document.getElementById("tSts").textContent="Salvato!";
-  document.getElementById("spnl").classList.remove("open");
-  fetchT();
-}
-function loadTC(){
-  var s=localStorage.getItem("t_sta_"+S.city.name)||"";
-  return{sta:s};
-}
-function fetchT(){
-  var c=loadTC();if(!c.sta){S.tData=null;return;}
-  fetch("/api/tempest?stationId="+encodeURIComponent(c.sta))
-    .then(function(r){if(!r.ok)throw new Error("err");return r.json();})
-    .then(function(j){S.tData=j;renderLive();if(S.data)renderDt();
-      return fetch("/api/tempest-forecast?stationId="+encodeURIComponent(c.sta));
-    })
-    .then(function(r){if(r.ok)return r.json();return null;})
-    .then(function(j){if(j){S.tFc=j;if(S.data)renderAll();}})
-    .catch(function(){S.tData=null;});
-}
-function getTF(d){
-  if(!S.tFc||!S.tFc.forecast||!S.tFc.forecast.daily)return null;
-  var days=S.tFc.forecast.daily;if(d>=days.length)return null;
-  var x=days[d];return{tmax:x.air_temp_high,tmin:x.air_temp_low,wind:x.wind_avg!=null?x.wind_avg*3.6:null,prob:x.precip_probability,cond:x.conditions};
 }
 
 // Weather Underground PWS
@@ -913,7 +873,7 @@ function showWeights(){
     var bar="█".repeat(Math.max(1,Math.round(pct/2.5)))+"░".repeat(Math.max(0,20-Math.round(pct/2.5)));
     return m.name+" ("+m.res+"): "+pct+"% "+bar;
   });
-  var src=S.calSource==="tempest"?"Tempest Weather Station":S.calSource==="era5"?"ERA5 reanalysis (ECMWF)":"best_match";
+  var src=S.calSource==="era5"?"ERA5 reanalysis (ECMWF)":"best_match";
   alert("Pesi calibrati per "+S.city.name+":\n(MAE 30gg vs "+src+")\n\n"+lines.join("\n"));
 }
 
@@ -923,21 +883,12 @@ function fetchAll(){
   document.getElementById("erEl").style.display="none";
   document.getElementById("cnt").style.display="none";
   renderCB();
-  S.tData=null;S.tFc=null;S.wuData=[];S.current=null;S.weights=null;S.calStatus=null;
+  S.wuData=[];S.current=null;S.weights=null;S.calStatus=null;
   calibrate();
   // Fetch server-side station defaults, then init stations
   fetch("/api/stations?city="+encodeURIComponent(S.city.name))
     .then(function(r){return r.json();})
     .then(function(srv){
-      // Tempest: server default or localStorage
-      var tStaLS=localStorage.getItem("t_sta_"+S.city.name)||"";
-      var tSta=tStaLS||srv.tempest||"";
-      if(tSta){loadTC=function(){return{sta:tSta};};} // override for this session
-      var hasT=!!tSta;
-      var tFromLS=!!tStaLS;
-      document.getElementById("stogEl").style.display=tFromLS?"block":"none";
-      document.getElementById("spnl").classList.remove("open");
-      if(hasT){fetchT();}
       // WU: server default (array) or localStorage (comma-separated)
       var wStaLS=localStorage.getItem("wu_sta_"+S.city.name)||"";
       var wArr=wStaLS?wStaLS.split(",").map(function(x){return x.trim();}).filter(Boolean):(srv.wu||[]);
@@ -951,9 +902,6 @@ function fetchAll(){
     })
     .catch(function(e){
       console.warn("Station config fetch failed, using localStorage only:",e);
-      var tc=loadTC();var hasT=!!tc.sta;
-      document.getElementById("stogEl").style.display=hasT?"block":"none";
-      if(hasT)fetchT();
       var wIds=loadWUC();var hasW=wIds.length>0;
       document.getElementById("wuTogEl").style.display=hasW?"block":"none";
       if(hasW)fetchWU();
@@ -1312,21 +1260,7 @@ function renderLive(){
     h+=lcBuild(mIcon,'linear-gradient(135deg,#065f46,#059669)','#86efac',mName,S.mData.temp.toFixed(1)+'°C',[mPerc,mWx,mWind,''],mTs?'Aggiornamento '+mTs:'',mUrl);
     hasLive=true;
   }
-  // 3. Tempest
-  if(S.tData&&S.tData.obs&&S.tData.obs[0]&&S.tData.obs[0].air_temperature!=null){
-    var o=S.tData.obs[0];
-    var tTs=o.timestamp?new Date(o.timestamp*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
-    var tPerc=o.feels_like!=null&&Math.abs(o.feels_like-o.air_temperature)>=1?'Percepita '+o.feels_like.toFixed(1)+'°':'';
-    var tWind=o.wind_avg!=null?'Vento '+((o.wind_avg*3.6).toFixed(0))+' km/h'+(o.wind_direction!=null?' '+o.wind_direction+'°':''):'';
-    var tHum=o.relative_humidity!=null?'Umidità '+o.relative_humidity+'%':'';
-    var tLabel=S.tData.public_name||S.tData.station_name||'Tempest';
-    var twc=tWx(o,S.city.lat);var tIcon=twc!=null?wI(twc):'🌡️';var tWxD=twc!=null?wD(twc):'';
-    var tStaId=loadTC().sta||'';
-    var tUrl=tStaId?'https://tempestwx.com/station/'+tStaId:'';
-    h+=lcBuild(tIcon,'linear-gradient(135deg,#4c1d95,#7c3aed)','#c4b5fd',tLabel,o.air_temperature.toFixed(1)+'°C',[tPerc,tWxD,tWind,tHum],tTs?'Aggiornamento '+tTs:'',tUrl);
-    hasLive=true;
-  }
-  // 4. WU (multiple stations)
+  // 3. WU (multiple stations)
   for(var wi=0;wi<S.wuData.length;wi++){
     var wd=S.wuData[wi];
     if(!wd||!wd.metric||wd.metric.temp==null)continue;
@@ -1346,7 +1280,6 @@ function renderLive(){
   h+='<span style="font-weight:600">Fonti:</span>';
   h+='<span><i style="background:#3b82f6"></i>Modello meteo</span>';
   h+='<span><i style="background:#059669"></i>Aeroporto più vicino</span>';
-  h+='<span><i style="background:#7c3aed"></i>Tempest</span>';
   h+='<span><i style="background:#c2410c"></i>Weather Underground</span>';
   h+='</div>';
   var el=document.getElementById("liveCard");var sl=document.getElementById("secLive");
@@ -1354,7 +1287,7 @@ function renderLive(){
   else{sl.style.display="none";el.style.display="none";}
 }
 function renderAll(){renderLive();renderDt();renderWk();renderHourly();
-  document.getElementById("ftEl").innerHTML='Dati: Open-Meteo API · Provider: ECMWF IFS, ECMWF AIFS, GFS, ICON, Météo-France, JMA, GEM, UKMO, ItaliaMeteo ARPAE, KNMI, MeteoSwiss, DMI, MET Norway'+(S.tData?' + Tempest':'')+(S.wuData.length?' + WU PWS':'')+'<br>METAR: aviationweather.gov (stazioni Aeronautica Militare)<br>'+S.city.lat.toFixed(4)+'°N, '+S.city.lon.toFixed(4)+'°E';
+  document.getElementById("ftEl").innerHTML='Dati: Open-Meteo API · Provider: ECMWF IFS, ECMWF AIFS, GFS, ICON, Météo-France, JMA, GEM, UKMO, ItaliaMeteo ARPAE, KNMI, MeteoSwiss, DMI, MET Norway'+(S.wuData.length?' + WU PWS':'')+'<br>METAR: aviationweather.gov (stazioni Aeronautica Militare)<br>'+S.city.lat.toFixed(4)+'°N, '+S.city.lon.toFixed(4)+'°E';
 }
 function renderWk(){
   document.getElementById("wkCard").style.display="block";
@@ -1413,7 +1346,7 @@ function renderSyn(){
   document.getElementById("legendBadge").innerHTML='<div class="hc-legend aff-badge">Affidabilit\u00e0 <span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#22c55e;vertical-align:middle"></span> alta</span><span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#eab308;vertical-align:middle"></span> media</span><span><span style="display:inline-block;width:18px;height:3px;border-radius:2px;background:#ef4444;vertical-align:middle"></span> bassa</span></div>';
 }
 function renderCmp(){
-  var d=S.day;var tf=getTF(d);var showT=tf?true:false;
+  var d=S.day;
   var h='<div style="overflow-x:auto"><table><thead><tr><th style="text-align:left">Modello</th><th>Meteo</th><th>T.Max</th><th>T.Min</th><th>Prec.</th><th>Vento</th><th>Prob.%</th></tr></thead><tbody>';
   for(var i=0;i<MODELS.length;i++){
     var m=MODELS[i];var code=gm(m.id,"weather_code",d);
@@ -1427,15 +1360,6 @@ function renderCmp(){
     else h+='<td style="text-align:center">'+r1(gm(m.id,"precipitation_sum",d))+'mm</td>';
     h+='<td style="text-align:center">'+r1(gm(m.id,"wind_speed_10m_max",d))+'</td>';
     h+='<td style="text-align:center">'+r1(gm(m.id,"precipitation_probability_max",d))+'</td></tr>';
-  }
-  if(showT){
-    h+='<tr style="background:linear-gradient(90deg,#f0f9ff,#e0f2fe)"><td><div class="mn" style="color:#0c4a6e">Tempest <span class="ttag">LIVE</span></div><div class="mm">Stazione personale · '+S.city.name+'</div></td>';
-    h+='<td style="text-align:center;font-size:12px;color:#0c4a6e">'+(tf.cond||"--")+'</td>';
-    h+='<td style="text-align:center;font-weight:600;color:#ef4444">'+r1(tf.tmax)+'</td>';
-    h+='<td style="text-align:center;font-weight:600;color:#3b82f6">'+r1(tf.tmin)+'</td>';
-    h+='<td style="text-align:center">--</td>';
-    h+='<td style="text-align:center">'+r1(tf.wind)+'</td>';
-    h+='<td style="text-align:center">'+r1(tf.prob)+'</td></tr>';
   }
   // WU PWS rows (only day 0, one per station)
   if(d===0){for(var wri=0;wri<S.wuData.length;wri++){
@@ -1462,13 +1386,10 @@ if(lc){
 }
 renderCB();
 fetchAll();
-// Auto-refresh Tempest + METAR + WU every 10 min
+// Auto-refresh METAR + WU every 10 min
 setInterval(function(){
-  var tc=loadTC();
-  if(tc.tok&&tc.sta)fetchT();
   fetchM();
-  var wc=loadWUC();
-  if(wc.key&&wc.sta)fetchWU();
+  fetchWU();
 },600000);
 </script>
 </body>

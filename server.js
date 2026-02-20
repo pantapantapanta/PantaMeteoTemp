@@ -8,11 +8,10 @@ const PORT = process.env.PORT || 3000;
 
 // API keys from environment variables (never exposed to client)
 const WU_API_KEY = process.env.WU_API_KEY || "";
-const TEMPEST_TOKEN = process.env.TEMPEST_TOKEN || "";
 
 // Station defaults per city (server-side, keys stay hidden)
 const STATION_DEFAULTS = {
-  "Milano": { tempest: "195317", wu: ["IMILAN5976"] },
+  "Milano": { wu: ["IMILAN5976", "IMILAN6036"] },
   "Bormio": { wu: ["IGROSI31", "ISONDA1"] },
   "Torino": { wu: ["ITURIN3276", "ITURIN3266"] },
   "Manduria": { wu: ["IMANDU60", "IMARUG3"] },
@@ -88,35 +87,10 @@ const server = http.createServer(function(req, res) {
     var city = parsed.query.city || "";
     var def = STATION_DEFAULTS[city] || {};
     var result = {
-      tempest: def.tempest && TEMPEST_TOKEN ? def.tempest : null,
       wu: def.wu && WU_API_KEY ? def.wu : null
     };
     res.writeHead(200, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
     res.end(JSON.stringify(result));
-    return;
-  }
-
-  // Tempest proxy — token stays server-side
-  if (parsed.pathname === "/api/tempest") {
-    var staId = parsed.query.stationId || "";
-    if (!staId || !TEMPEST_TOKEN) {
-      res.writeHead(400, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-      res.end(JSON.stringify({ error: "stationId required and TEMPEST_TOKEN must be configured" }));
-      return;
-    }
-    proxyGet("https://swd.weatherflow.com/swd/rest/observations/station/" + encodeURIComponent(staId) + "?token=" + encodeURIComponent(TEMPEST_TOKEN), res);
-    return;
-  }
-
-  // Tempest forecast proxy
-  if (parsed.pathname === "/api/tempest-forecast") {
-    var staId = parsed.query.stationId || "";
-    if (!staId || !TEMPEST_TOKEN) {
-      res.writeHead(400, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
-      res.end(JSON.stringify({ error: "stationId required and TEMPEST_TOKEN must be configured" }));
-      return;
-    }
-    proxyGet("https://swd.weatherflow.com/swd/rest/better_forecast?station_id=" + encodeURIComponent(staId) + "&token=" + encodeURIComponent(TEMPEST_TOKEN) + "&units_temp=c&units_wind=kph&units_pressure=mb&units_precip=mm", res);
     return;
   }
 
@@ -216,6 +190,5 @@ const server = http.createServer(function(req, res) {
 server.listen(PORT, function() {
   console.log("PantaMeteo running on port " + PORT);
   console.log("  WU_API_KEY:", WU_API_KEY ? "configured (" + WU_API_KEY.substring(0,8) + "...)" : "NOT SET");
-  console.log("  TEMPEST_TOKEN:", TEMPEST_TOKEN ? "configured (" + TEMPEST_TOKEN.substring(0,8) + "...)" : "NOT SET");
   console.log("  Station defaults:", JSON.stringify(STATION_DEFAULTS));
 });
