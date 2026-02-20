@@ -133,10 +133,23 @@ tbody tr:nth-child(even){background:#fafafa}
 .meth-box em{color:#475569;font-size:13px}
 .meth-loading{text-align:center;padding:48px 0;color:#94a3b8;font-size:14px}
 .liverow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0 8px}
-.hero-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:stretch;gap:16px;margin-top:24px;margin-bottom:24px;padding-bottom:24px;position:relative}
-.hero-row::after{content:"";position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(148,163,184,0.3),transparent)}
-.hero-row .lt{justify-self:center;display:flex;flex-direction:column;justify-content:center}
-.hero-row .sc{align-self:center;justify-self:center;margin-bottom:0}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;margin:0 0 12px;padding:0}
+.card>.sec-title{margin-bottom:8px}
+.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.live-zone{display:flex;flex-direction:column;gap:8px}
+.live-zone-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:#94a3b8;margin-bottom:4px}
+.om-card{border-radius:12px;padding:20px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:#fff;display:flex;align-items:center;gap:20px}
+.om-icon{font-size:56px;line-height:1;flex-shrink:0}
+.om-data{flex:1;min-width:0}
+.om-temp{font-size:32px;font-weight:700;line-height:1.1}
+.om-row{font-size:11px;opacity:.85;margin-top:3px}
+.om-ts{font-size:10px;color:#93c5fd;margin-top:6px}
+.sta-cards{display:flex;flex-direction:column;gap:8px}
+@media(max-width:600px){
+  .live-grid{grid-template-columns:1fr}
+  .om-card{flex-direction:column;text-align:center;gap:8px}
+  .om-icon{font-size:44px}
+}
 .lt{border-radius:10px;padding:14px 16px;text-align:center;font-size:13px}
 .lt .lv{font-size:28px;font-weight:700;margin:4px 0}
 .lt .ll{font-size:12px;font-weight:600;margin-bottom:2px}
@@ -197,7 +210,7 @@ tbody tr:nth-child(even){background:#fafafa}
   .dh{margin-bottom:8px;gap:4px}
   .dh h2{font-size:15px}
   .tbtn{padding:5px 12px;font-size:13px}
-  .hero-row{gap:8px;margin-top:8px;margin-bottom:8px;padding-bottom:8px}
+  .live-grid{grid-template-columns:1fr}
   .lt{padding:10px 12px!important;border-radius:8px!important}
   .lt .lv{font-size:24px!important;margin:2px 0!important}
   .lt .ll{font-size:12px!important}
@@ -358,6 +371,7 @@ tbody tr:nth-child(even){background:#fafafa}
   </div>
 
   <!-- Sezione 3: Dati Live -->
+  <div id="secLive" class="sec-title" style="display:none">Dati Live</div>
   <div id="liveCard" class="card" style="display:none">
     <div id="liveContent"></div>
   </div>
@@ -367,11 +381,13 @@ tbody tr:nth-child(even){background:#fafafa}
   <div id="erEl" class="err" style="display:none"></div>
 
   <!-- Sezione 4: Previsioni -->
-  <div id="legendBadge" style="display:none;text-align:center;margin:-8px 0 8px"></div>
+  <div id="secPrev" class="sec-title" style="display:none">Previsioni</div>
 
   <div id="wkCard" class="card" style="display:none">
     <div class="wg" id="wkG"></div>
   </div>
+
+  <div id="legendBadge" style="display:none;text-align:center;margin:4px 0 8px"></div>
 
   <div id="cnt" style="display:none">
     <div class="card">
@@ -549,6 +565,55 @@ var stm=null;
 
 function wI(c){if(c==null)return"--";if(c===0)return"☀️";if(c<=3)return"⛅";if(c<=48)return"🌫️";if(c<=57)return"🌦️";if(c<=65)return"🌧️";if(c<=75)return"❄️";if(c<=82)return"🌧️";if(c<=99)return"⛈️";return"🌤️";}
 function wD(c){if(c==null)return"N/D";if(c===0)return"Sereno";if(c<=3)return"Parz. nuvoloso";if(c<=48)return"Nebbia";if(c<=57)return"Pioviggine";if(c<=65)return"Pioggia";if(c<=75)return"Neve";if(c<=82)return"Rovesci";if(c<=99)return"Temporale";return"Variabile";}
+// Derive WMO weather code from Tempest sensor readings
+function tWx(obs,lat){
+  if(!obs)return null;
+  // 1. Thunderstorm
+  if(obs.lightning_strike_count>0){
+    if(obs.precip_type===2)return 99; // hail
+    if(obs.precip>0||obs.precip_type===1)return 95; // thunder+rain
+    return 95;
+  }
+  // 2. Precipitation
+  if(obs.precip_type===2)return 82; // hail without thunder → heavy shower
+  if(obs.precip>0||obs.precip_type===1){
+    // snow if temp<=1
+    if(obs.air_temperature!=null&&obs.air_temperature<=1)return obs.precip>2?75:obs.precip>0.5?73:71;
+    // rain intensity
+    return obs.precip>4?65:obs.precip>1?63:61;
+  }
+  // 3. Fog: very high humidity + low solar radiation during day
+  var isDay=obs.solar_radiation!=null&&obs.solar_radiation>5;
+  if(obs.relative_humidity!=null&&obs.relative_humidity>=97){
+    if(!isDay||obs.solar_radiation<50)return 45;
+  }
+  // 4. Cloud cover from solar radiation ratio
+  if(obs.solar_radiation!=null&&isDay&&lat!=null){
+    // Approximate clear-sky radiation using solar elevation
+    var now=obs.timestamp?new Date(obs.timestamp*1000):new Date();
+    var doy=Math.floor((now-new Date(now.getFullYear(),0,0))/(864e5));
+    var hr=now.getUTCHours()+now.getUTCMinutes()/60;
+    var decl=23.45*Math.sin(2*Math.PI*(284+doy)/365)*Math.PI/180;
+    var latr=lat*Math.PI/180;
+    // Solar hour angle (approximate using longitude from city)
+    var lon=S.city?S.city.lon:0;
+    var ha=(hr-12)*15+lon;var har=ha*Math.PI/180;
+    var sinElev=Math.sin(latr)*Math.sin(decl)+Math.cos(latr)*Math.cos(decl)*Math.cos(har);
+    if(sinElev>0.05){
+      var clearSky=1000*sinElev; // simplified clear-sky W/m²
+      var ratio=obs.solar_radiation/clearSky;
+      if(ratio>0.7)return 0; // clear
+      if(ratio>0.4)return 2; // partly cloudy
+      return 3; // overcast
+    }
+  }
+  // 5. Night or no solar data
+  if(!isDay){
+    if(obs.relative_humidity!=null&&obs.relative_humidity>=97)return 45; // fog at night
+    return 0; // clear night (best guess)
+  }
+  return 2; // default: partly cloudy
+}
 function r1(v){return v!=null&&!isNaN(v)?Math.round(v*10)/10:"--";}
 function st(vals,wts){
   var pairs=[];
@@ -897,7 +962,7 @@ function fetchAll(){
   var url="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&current=temperature_2m,weather_code,wind_speed_10m,wind_direction_10m,relative_humidity_2m,pressure_msl,apparent_temperature,precipitation,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,wind_speed_10m_max,precipitation_probability_max&hourly=temperature_2m,precipitation_probability,precipitation,snowfall,weather_code,wind_speed_10m,wind_direction_10m&models="+ids+"&timezone=auto&forecast_days=16";
   fetch(url)
     .then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.json();})
-    .then(function(j){S.data=j;S.current=j.current||null;document.getElementById("ldEl").style.display="none";document.getElementById("cnt").style.display="block";renderAll();})
+    .then(function(j){S.data=j;S.current=j.current||null;document.getElementById("ldEl").style.display="none";document.getElementById("secPrev").style.display="block";document.getElementById("cnt").style.display="block";renderAll();})
     .catch(function(e){document.getElementById("ldEl").style.display="none";document.getElementById("erEl").textContent="Errore: "+e.message;document.getElementById("erEl").style.display="block";});
 }
 
@@ -1213,64 +1278,86 @@ function liveCard(label,labelClr,bg,temp,perc,wxLine,windLine,humLine,ts,tsClr){
   return h;
 }
 function renderLive(){
-  var hasLive=false;
-  var h='<div class="hero-row">';
-  // LEFT: Tempest
+  var hasPub=false,hasPrv=false;
+  // LEFT: public stations (Open-Meteo + METAR)
+  var pubH='';
+  // Open-Meteo current
+  if(S.current&&S.current.temperature_2m!=null){
+    var c=S.current;
+    var ts='';
+    if(c.time){
+      var p=c.time.split(/[-T:]/);
+      var utcMs=Date.UTC(+p[0],p[1]-1,+p[2],+p[3],+(p[4]||0))-(S.data&&S.data.utc_offset_seconds||0)*1000;
+      ts=new Date(utcMs).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
+    }
+    var perc=c.apparent_temperature!=null&&Math.abs(c.apparent_temperature-c.temperature_2m)>=1?'Percepita '+c.apparent_temperature.toFixed(1)+'°':'';
+    pubH+='<div class="om-card">';
+    pubH+='<div class="om-icon">'+wI(c.weather_code)+'</div>';
+    pubH+='<div class="om-data">';
+    pubH+='<div class="om-temp">'+c.temperature_2m.toFixed(1)+'°C</div>';
+    if(perc)pubH+='<div class="om-row">'+perc+'</div>';
+    pubH+='<div class="om-row">'+wD(c.weather_code)+'</div>';
+    pubH+='<div class="om-row">Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':'')+'</div>';
+    pubH+='<div class="om-row">Umidità '+c.relative_humidity_2m+'%</div>';
+    if(ts)pubH+='<div class="om-ts">Aggiornamento '+ts+'</div>';
+    pubH+='</div></div>';
+    hasPub=true;
+  }
+  // METAR
+  if(S.mData&&S.mData.temp!=null){
+    var mName=S.mData.name||ICAO[S.city.name]||"METAR";
+    var ts3="";
+    if(S.mData.obsTime){var md=typeof S.mData.obsTime==="number"?new Date(S.mData.obsTime*1000):new Date(S.mData.obsTime);ts3=md.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}
+    var perc=S.mData.dewp!=null?'Dew point '+S.mData.dewp.toFixed(1)+'°':'';
+    var wxM=mWxD(S.mData.wxString)||mCloudD(S.mData.clouds)||'';
+    var windM=S.mData.wspd!=null?'Vento '+(S.mData.wspd*1.852).toFixed(0)+' km/h'+(S.mData.wdir!=null?' '+S.mData.wdir+'°':''):'';
+    pubH+=liveCard(mName,'#c4b5fd','linear-gradient(135deg,#4c1d95,#7c3aed)',S.mData.temp.toFixed(1)+'°C',perc,wxM,windM,'',ts3?'Aggiornamento '+ts3:'','#c4b5fd');
+    hasPub=true;
+  }else if(S.mErr){
+    pubH+='<div class="lt" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;opacity:.4"><div class="ll" style="color:#c4b5fd">METAR</div><div class="lts" style="margin-top:4px">Non disponibile</div></div>';
+    hasPub=true;
+  }
+  // RIGHT: personal stations (Tempest + WU)
+  var prvH='';
+  // Tempest
   if(S.tData&&S.tData.obs&&S.tData.obs[0]&&S.tData.obs[0].air_temperature!=null){
     var o=S.tData.obs[0];
     var ts=o.timestamp?new Date(o.timestamp*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
     var perc=o.feels_like!=null&&Math.abs(o.feels_like-o.air_temperature)>=1?'Percepita '+o.feels_like.toFixed(1)+'°':'';
     var wind=o.wind_avg!=null?'Vento '+((o.wind_avg*3.6).toFixed(0))+' km/h'+(o.wind_direction!=null?' '+o.wind_direction+'°':''):'';
     var hum=o.relative_humidity!=null?'Umidità '+o.relative_humidity+'%':'';
-    var tLabel=S.tData.station_name||S.tData.public_name||'Tempest station';
-    h+=liveCard(tLabel,'#86efac','linear-gradient(135deg,#065f46,#059669)',o.air_temperature.toFixed(1)+'°C',perc,'',wind,hum,ts?'Aggiornamento '+ts:'','#86efac');
-    hasLive=true;
+    var tLabel=S.tData.public_name||S.tData.station_name||'Tempest station';
+    var twc=tWx(o,S.city.lat);var twx=twc!=null?wI(twc)+' '+wD(twc):'';
+    prvH+=liveCard(tLabel,'#86efac','linear-gradient(135deg,#065f46,#059669)',o.air_temperature.toFixed(1)+'°C',perc,twx,wind,hum,ts?'Aggiornamento '+ts:'','#86efac');
+    hasPrv=true;
   }
-  // LEFT alt: WU (if no Tempest)
-  if(!hasLive&&S.wuData&&S.wuData.metric&&S.wuData.metric.temp!=null){
-    var wm=S.wuData.metric;var ts=S.wuData.epoch?new Date(S.wuData.epoch*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
+  // WU
+  if(S.wuData&&S.wuData.metric&&S.wuData.metric.temp!=null){
+    var wm=S.wuData.metric;var ts2=S.wuData.epoch?new Date(S.wuData.epoch*1000).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"}):"";
     var wind=wm.windSpeed!=null?'Vento '+wm.windSpeed.toFixed(0)+' km/h'+(S.wuData.winddir!=null?' '+S.wuData.winddir+'°':''):'';
     var hum=S.wuData.humidity!=null?'Umidità '+S.wuData.humidity+'%':'';
     var wLabel=S.wuData.neighborhood||S.wuData.stationID||'Weather Underground';
-    h+=liveCard(wLabel,'#fdba74','linear-gradient(135deg,#7c2d12,#c2410c)',wm.temp.toFixed(1)+'°C','','',wind,hum,ts?'Aggiornamento '+ts:'','#fdba74');
-    hasLive=true;
+    prvH+=liveCard(wLabel,'#fdba74','linear-gradient(135deg,#7c2d12,#c2410c)',wm.temp.toFixed(1)+'°C','','',wind,hum,ts2?'Aggiornamento '+ts2:'','#fdba74');
+    hasPrv=true;
   }
-  // CENTER: Open-Meteo current
-  if(S.current&&S.current.temperature_2m!=null){
-    var c=S.current;
-    var ts='';
-    if(c.time){
-      // c.time is "YYYY-MM-DDTHH:MM" in city timezone; convert to UTC then to reader-local
-      var p=c.time.split(/[-T:]/);
-      var utcMs=Date.UTC(+p[0],p[1]-1,+p[2],+p[3],+(p[4]||0))-(S.data&&S.data.utc_offset_seconds||0)*1000;
-      ts=new Date(utcMs).toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});
-    }
-    var perc=c.apparent_temperature!=null&&Math.abs(c.apparent_temperature-c.temperature_2m)>=1?'Percepita '+c.apparent_temperature.toFixed(1)+'°':'';
-    var wx=wI(c.weather_code)+' '+wD(c.weather_code);
-    var wind='Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':'');
-    var hum='Umidità '+c.relative_humidity_2m+'%';
-    h+=liveCard('Open-Meteo live','#93c5fd','linear-gradient(135deg,#1e40af,#3b82f6)',c.temperature_2m.toFixed(1)+'°C',perc,wx,wind,hum,ts?'Aggiornamento '+ts:'','#93c5fd');
-    hasLive=true;
-  }
-  // RIGHT: METAR
-  if(S.mData&&S.mData.temp!=null){
-    var mName=S.mData.name||ICAO[S.city.name]||"METAR";
-    var ts="";
-    if(S.mData.obsTime){var md=typeof S.mData.obsTime==="number"?new Date(S.mData.obsTime*1000):new Date(S.mData.obsTime);ts=md.toLocaleTimeString("it-IT",{hour:"2-digit",minute:"2-digit"});}
-    var perc=S.mData.dewp!=null?'Dew point '+S.mData.dewp.toFixed(1)+'°':'';
-    var wxM=mWxD(S.mData.wxString)||mCloudD(S.mData.clouds)||'';
-    var windM=S.mData.wspd!=null?'Vento '+(S.mData.wspd*1.852).toFixed(0)+' km/h'+(S.mData.wdir!=null?' '+S.mData.wdir+'°':''):'';
-    var humM='';
-    h+=liveCard(mName,'#c4b5fd','linear-gradient(135deg,#4c1d95,#7c3aed)',S.mData.temp.toFixed(1)+'°C',perc,wxM,windM,humM,ts?'Aggiornamento '+ts:'','#c4b5fd');
-    hasLive=true;
-  }else if(S.mErr){
-    h+='<div class="lt" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);color:#fff;opacity:.4"><div class="ll" style="color:#c4b5fd">METAR</div><div class="lts" style="margin-top:4px">Non disponibile</div></div>';
-    hasLive=true;
-  }
+  var hasLive=hasPub||hasPrv;
+  var h='<div class="live-grid">';
+  // Left zone: public stations
+  h+='<div class="live-zone">';
+  h+='<div class="live-zone-title">Stazioni Meteo Pubbliche</div>';
+  if(hasPub)h+='<div class="sta-cards">'+pubH+'</div>';
+  else h+='<div style="font-size:12px;color:#94a3b8;padding:16px 0">In attesa dei dati...</div>';
   h+='</div>';
-  var el=document.getElementById("liveCard");
-  if(hasLive){el.style.display="block";document.getElementById("liveContent").innerHTML=h;}
-  else{el.style.display="none";}
+  // Right zone: personal stations
+  h+='<div class="live-zone">';
+  h+='<div class="live-zone-title">Stazioni Meteo Personali</div>';
+  if(hasPrv)h+='<div class="sta-cards">'+prvH+'</div>';
+  else h+='<div style="font-size:12px;color:#94a3b8;padding:16px 0">Nessuna stazione configurata</div>';
+  h+='</div>';
+  h+='</div>';
+  var el=document.getElementById("liveCard");var sl=document.getElementById("secLive");
+  if(hasLive){sl.style.display="block";el.style.display="block";document.getElementById("liveContent").innerHTML=h;}
+  else{sl.style.display="none";el.style.display="none";}
 }
 function renderAll(){renderLive();renderDt();renderWk();renderHourly();
   document.getElementById("ftEl").innerHTML='Dati: Open-Meteo API · Provider: ECMWF IFS, ECMWF AIFS, GFS, ICON, Météo-France, JMA, GEM, UKMO, ItaliaMeteo ARPAE, KNMI, MeteoSwiss, DMI, MET Norway'+(S.tData?' + Tempest':'')+(S.wuData?' + WU PWS':'')+'<br>METAR: aviationweather.gov (stazioni Aeronautica Militare)<br>'+S.city.lat.toFixed(4)+'°N, '+S.city.lon.toFixed(4)+'°E';
