@@ -143,7 +143,7 @@ tbody tr:nth-child(even){background:#fafafa}
 .lc-row{font-size:10px;opacity:.85;margin-top:3px}
 .lc-ts{font-size:9px;margin-top:5px}
 .lc-leg{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:8px;font-size:10px;color:#64748b}
-.lc-leg i{display:inline-block;width:8px;height:8px;border-radius:50%;vertical-align:middle;margin-right:3px;font-style:normal}
+.lc-leg i{display:inline-block;width:14px;height:10px;border-radius:3px;vertical-align:middle;margin-right:4px;font-style:normal}
 @media(max-width:900px){.lc{flex:1 1 45%;min-width:0}}
 @media(max-width:500px){.live-row{gap:6px}.lc{flex:1 1 calc(50% - 3px);min-width:0;padding:8px 10px;gap:8px;border-radius:10px}.lc-icon{font-size:28px}.lc-label{font-size:8px;letter-spacing:0.5px;margin-bottom:1px}.lc-temp{font-size:20px}.lc-row{font-size:9px;margin-top:2px}.lc-ts{font-size:8px;margin-top:3px}.lc-leg{gap:4px 10px;margin-top:6px;font-size:9px}}
 .ca{color:#16a34a;background:#dcfce7}
@@ -1288,7 +1288,7 @@ function renderLive(){
     }
     var perc=c.apparent_temperature!=null&&Math.abs(c.apparent_temperature-c.temperature_2m)>=1?'Percepita '+c.apparent_temperature.toFixed(1)+'°':'';
     var rows=[perc,wD(c.weather_code),'Vento '+c.wind_speed_10m.toFixed(0)+' km/h'+(c.wind_direction_10m!=null?' '+c.wind_direction_10m+'°':''),'Umidità '+c.relative_humidity_2m+'%'];
-    h+=lcBuild(wI(c.weather_code),'linear-gradient(135deg,#1e40af,#3b82f6)','#93c5fd','Open-Meteo',c.temperature_2m.toFixed(1)+'°C',rows,ts?'Aggiornamento '+ts:'');
+    h+=lcBuild(wI(c.weather_code),'linear-gradient(135deg,#1e40af,#3b82f6)','#93c5fd',S.city.name,c.temperature_2m.toFixed(1)+'°C',rows,ts?'Aggiornamento '+ts:'');
     hasLive=true;
   }
   // 2. METAR
@@ -1335,8 +1335,9 @@ function renderLive(){
   h+='</div>';
   // Legend
   h+='<div class="lc-leg">';
+  h+='<span style="font-weight:600">Fonti:</span>';
   h+='<span><i style="background:#3b82f6"></i>Open-Meteo</span>';
-  h+='<span><i style="background:#059669"></i>METAR</span>';
+  h+='<span><i style="background:#059669"></i>Aeroporto più vicino</span>';
   h+='<span><i style="background:#7c3aed"></i>Tempest</span>';
   h+='<span><i style="background:#c2410c"></i>WU</span>';
   h+='</div>';

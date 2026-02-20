@@ -15,6 +15,7 @@ const STATION_DEFAULTS = {
   "Milano": { tempest: "195317", wu: ["IMILAN5976"] },
   "Bormio": { wu: ["IGROSI31", "ISONDA1"] },
   "Torino": { wu: ["ITURIN3276", "ITURIN3266"] },
+  "Manduria": { wu: ["IMANDU60", "IMARUG3"] },
   "Boston": { wu: ["KMABOSTO391"] }
 };
 
