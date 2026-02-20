@@ -360,8 +360,6 @@ tbody tr:nth-child(even){background:#fafafa}
 
   <div class="stog" id="stogEl" onclick="document.getElementById('spnl').classList.toggle('open')">⚙ Configura stazione Tempest</div>
   <div class="spnl" id="spnl">
-    <label>Tempest API Token</label>
-    <input type="text" id="tTok" placeholder="Incolla token...">
     <label>Station ID</label>
     <input type="text" id="tSta" placeholder="Es: 195317">
     <button onclick="saveTempest()">Salva e collega</button>
@@ -369,8 +367,6 @@ tbody tr:nth-child(even){background:#fafafa}
   </div>
   <div class="stog" id="wuTogEl" onclick="document.getElementById('wuPnl').classList.toggle('open')">⚙ Configura stazione Weather Underground</div>
   <div class="spnl" id="wuPnl">
-    <label>WU API Key <a href="https://www.wunderground.com/member/api-keys" target="_blank" style="font-size:10px;color:#3b82f6">(ottieni gratis)</a></label>
-    <input type="text" id="wuKey" placeholder="Incolla API key...">
     <label>Station ID</label>
     <input type="text" id="wuSta" placeholder="Es: KMABOSTO391">
     <button onclick="saveWU()">Salva e collega</button>
@@ -622,26 +618,23 @@ function syn(day){
 
 // Tempest
 function saveTempest(){
-  var tok=document.getElementById("tTok").value.trim();
   var sta=document.getElementById("tSta").value.trim();
-  if(!tok||!sta){document.getElementById("tSts").textContent="Inserisci token e station ID";return;}
-  localStorage.setItem("t_tok_"+S.city.name,tok);localStorage.setItem("t_sta_"+S.city.name,sta);
+  if(!sta){document.getElementById("tSts").textContent="Inserisci Station ID";return;}
+  localStorage.setItem("t_sta_"+S.city.name,sta);
   document.getElementById("tSts").textContent="Salvato!";
   document.getElementById("spnl").classList.remove("open");
   fetchT();
 }
 function loadTC(){
-  if(S.city.name==="Milano")return{tok:"bb00bb00-5e98-405e-bc57-e59f8b4eab1c",sta:"195317"};
-  var t=localStorage.getItem("t_tok_"+S.city.name)||"";
   var s=localStorage.getItem("t_sta_"+S.city.name)||"";
-  return{tok:t,sta:s};
+  return{sta:s};
 }
 function fetchT(){
-  var c=loadTC();if(!c.tok||!c.sta){document.getElementById("tBan").style.display="none";return;}
-  fetch("https://swd.weatherflow.com/swd/rest/observations/station/"+c.sta+"?token="+c.tok)
+  var c=loadTC();if(!c.sta){document.getElementById("tBan").style.display="none";return;}
+  fetch("/api/tempest?stationId="+encodeURIComponent(c.sta))
     .then(function(r){if(!r.ok)throw new Error("err");return r.json();})
     .then(function(j){S.tData=j;renderTB(j);if(S.data)renderDt();
-      return fetch("https://swd.weatherflow.com/swd/rest/better_forecast?station_id="+c.sta+"&token="+c.tok+"&units_temp=c&units_wind=kph&units_pressure=mb&units_precip=mm");
+      return fetch("/api/tempest-forecast?stationId="+encodeURIComponent(c.sta));
     })
     .then(function(r){if(r.ok)return r.json();return null;})
     .then(function(j){if(j){S.tFc=j;if(S.data)renderAll();}})
@@ -673,27 +666,21 @@ function getTF(d){
 
 // Weather Underground PWS
 function saveWU(){
-  var key=document.getElementById("wuKey").value.trim();
   var sta=document.getElementById("wuSta").value.trim();
-  if(!key||!sta){document.getElementById("wuSts").textContent="Inserisci API key e Station ID";return;}
-  localStorage.setItem("wu_key_"+S.city.name,key);localStorage.setItem("wu_sta_"+S.city.name,sta);
+  if(!sta){document.getElementById("wuSts").textContent="Inserisci Station ID";return;}
+  localStorage.setItem("wu_sta_"+S.city.name,sta);
   document.getElementById("wuSts").textContent="Salvato!";
   document.getElementById("wuPnl").classList.remove("open");
   fetchWU();
 }
 function loadWUC(){
-  var k=localStorage.getItem("wu_key_"+S.city.name)||"";
   var s=localStorage.getItem("wu_sta_"+S.city.name)||"";
-  if(!k||!s){
-    var defs={"Boston":{key:"b0dccf87e8f04d3c9ccf87e8f09d3cb5",sta:"KMABOSTO391"}};
-    if(defs[S.city.name])return defs[S.city.name];
-  }
-  return{key:k,sta:s};
+  return{sta:s};
 }
 function fetchWU(){
-  var c=loadWUC();if(!c.key||!c.sta){document.getElementById("wuBan").style.display="none";S.wuData=null;return;}
-  console.log("WU fetch:",c.sta,c.key.substring(0,8)+"...");
-  fetch("/api/wu?stationId="+encodeURIComponent(c.sta)+"&apiKey="+encodeURIComponent(c.key))
+  var c=loadWUC();if(!c.sta){document.getElementById("wuBan").style.display="none";S.wuData=null;return;}
+  console.log("WU fetch:",c.sta);
+  fetch("/api/wu?stationId="+encodeURIComponent(c.sta))
     .then(function(r){return r.json().then(function(j){return{ok:r.ok,status:r.status,data:j};});})
     .then(function(res){
       console.log("WU response:",res.status,JSON.stringify(res.data).substring(0,200));
@@ -970,23 +957,42 @@ function fetchAll(){
   renderCB();
   S.tData=null;S.tFc=null;S.wuData=null;S.weights=null;S.calStatus=null;
   calibrate();
-  var tc=loadTC();
-  var hasT=tc.tok&&tc.sta;
-  var tFromLS=localStorage.getItem("t_tok_"+S.city.name)&&localStorage.getItem("t_sta_"+S.city.name);
-  document.getElementById("stogEl").style.display=tFromLS?"block":"none";
-  document.getElementById("spnl").classList.remove("open");
-  if(hasT){fetchT();}
-  else{document.getElementById("tBan").style.display="none";}
+  // Fetch server-side station defaults, then init stations
+  fetch("/api/stations?city="+encodeURIComponent(S.city.name))
+    .then(function(r){return r.json();})
+    .then(function(srv){
+      // Tempest: server default or localStorage
+      var tStaLS=localStorage.getItem("t_sta_"+S.city.name)||"";
+      var tSta=tStaLS||srv.tempest||"";
+      if(tSta){loadTC=function(){return{sta:tSta};};} // override for this session
+      var hasT=!!tSta;
+      var tFromLS=!!tStaLS;
+      document.getElementById("stogEl").style.display=tFromLS?"block":"none";
+      document.getElementById("spnl").classList.remove("open");
+      if(hasT){fetchT();}
+      else{document.getElementById("tBan").style.display="none";}
+      // WU: server default or localStorage
+      var wStaLS=localStorage.getItem("wu_sta_"+S.city.name)||"";
+      var wSta=wStaLS||srv.wu||"";
+      if(wSta){loadWUC=function(){return{sta:wSta};};} // override for this session
+      var hasW=!!wSta;
+      var wFromLS=!!wStaLS;
+      document.getElementById("wuTogEl").style.display=wFromLS?"block":"none";
+      document.getElementById("wuPnl").classList.remove("open");
+      if(wSta){document.getElementById("wuSta").value=wSta;}
+      if(hasW){fetchWU();}
+      else{document.getElementById("wuBan").style.display="none";}
+    })
+    .catch(function(e){
+      console.warn("Station config fetch failed, using localStorage only:",e);
+      var tc=loadTC();var hasT=!!tc.sta;
+      document.getElementById("stogEl").style.display=hasT?"block":"none";
+      if(hasT)fetchT();else document.getElementById("tBan").style.display="none";
+      var wc=loadWUC();var hasW=!!wc.sta;
+      document.getElementById("wuTogEl").style.display=hasW?"block":"none";
+      if(hasW)fetchWU();else document.getElementById("wuBan").style.display="none";
+    });
   fetchM();
-  var wc=loadWUC();
-  var hasW=wc.key&&wc.sta;
-  var wFromLS=localStorage.getItem("wu_key_"+S.city.name)&&localStorage.getItem("wu_sta_"+S.city.name);
-  document.getElementById("wuTogEl").style.display=wFromLS?"block":"none";
-  document.getElementById("wuPnl").classList.remove("open");
-  if(wc.key){document.getElementById("wuKey").value=wc.key;}
-  if(wc.sta){document.getElementById("wuSta").value=wc.sta;}
-  if(hasW){fetchWU();}
-  else{document.getElementById("wuBan").style.display="none";}
   var ids=MODELS.map(function(m){return m.id;}).join(",");
   var url="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon+"&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,snowfall_sum,wind_speed_10m_max,precipitation_probability_max&hourly=temperature_2m,precipitation_probability,precipitation,snowfall,weather_code,wind_speed_10m,wind_direction_10m&models="+ids+"&timezone=auto&forecast_days=16";
   fetch(url)
