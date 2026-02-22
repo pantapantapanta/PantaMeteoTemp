@@ -1,0 +1,12 @@
+{
+  "name": "turin-palace-meteo",
+  "version": "1.0.0",
+  "description": "Meteo — La Terrazza | Turin Palace Hotel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Meteo — La Terrazza",
+  "short_name": "La Terrazza",
+  "description": "Previsioni meteo e condizioni terrazza — Turin Palace Hotel",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FAFAF8",
+  "theme_color": "#5B7186",
+  "icons": [
+    {
+      "src": "/icon-turin-palace-meteo-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-turin-palace-meteo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
