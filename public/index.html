@@ -87,9 +87,10 @@
   }
   .header-title {
     font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 400;
-    letter-spacing: 0.02em;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: var(--primary);
   }
   .header-subtitle {
     font-size: 0.7rem;
@@ -213,6 +214,41 @@
     display: flex;
     justify-content: space-between;
   }
+
+  /* === TIPS SECTION === */
+  .tips-section { margin-bottom: 1.5rem; }
+  .tips-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .tips-title {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: var(--primary);
+  }
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+  }
+  .tip-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-card-alt);
+    border-radius: 10px;
+    transition: all var(--transition);
+  }
+  .tip-item:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  .tip-icon { font-size: 1.3rem; flex-shrink: 0; line-height: 1.4; }
+  .tip-text { font-size: 0.8rem; line-height: 1.4; }
+  .tip-label { font-weight: 600; color: var(--text); display: block; }
+  .tip-desc { color: var(--text-secondary); display: block; margin-top: 0.1rem; }
 
   /* === LIVE DATA CARDS === */
   .live-section { margin-bottom: 1.5rem; }
@@ -444,8 +480,8 @@
   <div class="header-brand">
     <div class="header-logo">☀</div>
     <div>
-      <div class="header-title">Meteo — La Terrazza</div>
-      <div class="header-subtitle">Turin Palace Hotel · Torino</div>
+      <div class="header-title">Turin Palace Hotel</div>
+      <div class="header-subtitle">Meteo — La Terrazza · Torino</div>
     </div>
   </div>
   <div class="header-actions">
@@ -502,6 +538,16 @@
     <div class="hero-time">
       <span>Fascia oraria: 19:00 – 23:00</span>
       <span>Aggiornato: 18:30</span>
+    </div>
+  </section>
+
+  <!-- CONSIGLI TERRAZZA -->
+  <section class="tips-section" id="tipsSection">
+    <div class="tips-card">
+      <div class="tips-title">I nostri consigli per la serata</div>
+      <div class="tips-grid" id="tipsGrid">
+        <!-- Populated by JS based on conditions -->
+      </div>
     </div>
   </section>
 
@@ -698,7 +744,8 @@
 
 <!-- FOOTER -->
 <footer class="footer">
-  <p>Meteo — La Terrazza · Turin Palace Hotel</p>
+  <p style="font-family:var(--font-display);font-size:0.9rem;color:var(--primary);font-weight:700">Turin Palace Hotel</p>
+  <p style="margin-top:0.25rem">Meteo — La Terrazza</p>
   <p style="margin-top:0.25rem">Powered by <a href="#">PantaMeteo</a> · 13 modelli · Calibrazione ERA5</p>
 </footer>
 
@@ -722,6 +769,73 @@
     arrow.textContent = body.classList.contains('open') ? '▼' : '▶';
   }
 
+  // === TERRACE TIPS ENGINE ===
+  function generateTips() {
+    // Demo conditions (in production, read from live data)
+    const temp = 22, wind = 8, rainProb = 5, humidity = 55;
+    const tips = [];
+
+    // Temperature-based
+    if (temp >= 22) {
+      tips.push({ icon: '👗', label: 'Abbigliamento leggero', desc: 'Serata mite — perfetta per un abito estivo o una camicia leggera' });
+    } else if (temp >= 17) {
+      tips.push({ icon: '🧥', label: 'Giacca leggera', desc: 'Portatevi una giacca o un cardigan per il dopo cena' });
+    } else if (temp >= 12) {
+      tips.push({ icon: '🧣', label: 'Copritevi bene', desc: 'Sera fresca — consigliamo cappotto o piumino leggero' });
+    } else {
+      tips.push({ icon: '🧤', label: 'Serata fredda', desc: 'Temperature basse — guanti e sciarpa consigliati' });
+    }
+
+    // Plaid suggestion
+    if (temp < 20) {
+      tips.push({ icon: '🛋️', label: 'Plaid disponibili', desc: 'Chiedete al personale un plaid per le vostre gambe — è un piacere' });
+    } else {
+      tips.push({ icon: '✨', label: 'Serata perfetta', desc: 'Temperatura ideale — godetevi la terrazza in tutta comodità' });
+    }
+
+    // Wind-based
+    if (wind > 20) {
+      tips.push({ icon: '🌬️', label: 'Vento forte', desc: 'Attenzione al vento — fissate bene tovaglioli e oggetti leggeri' });
+    } else if (wind > 12) {
+      tips.push({ icon: '💨', label: 'Brezza vivace', desc: 'Un po\' di brezza — raccogliete i capelli e scegliete un posto riparato' });
+    } else {
+      tips.push({ icon: '🍃', label: 'Aria tranquilla', desc: 'Brezza leggera e piacevole — ideale per le candele sul tavolo' });
+    }
+
+    // Rain
+    if (rainProb > 50) {
+      tips.push({ icon: '☂️', label: 'Ombrello consigliato', desc: 'Possibilità di pioggia elevata — tenete un ombrello a portata di mano' });
+    } else if (rainProb > 20) {
+      tips.push({ icon: '🌂', label: 'Cielo incerto', desc: 'Qualche nuvola in arrivo — niente paura, le aree sono coperte' });
+    } else {
+      tips.push({ icon: '🌙', label: 'Cielo sereno', desc: 'Serata limpida — perfetta per ammirare le stelle sopra Torino' });
+    }
+
+    // Sun protection (for early evening)
+    if (temp > 24) {
+      tips.push({ icon: '🕶️', label: 'Occhiali da sole', desc: 'Il sole al tramonto può essere ancora intenso — proteggete gli occhi' });
+    }
+
+    // Humidity
+    if (humidity > 70) {
+      tips.push({ icon: '💧', label: 'Umidità alta', desc: 'Aria umida — scegliete tessuti traspiranti e bevete acqua fresca' });
+    }
+
+    // Always show
+    tips.push({ icon: '🍷', label: 'Aperitivo consigliato', desc: 'Il nostro sommelier suggerisce un Barolo per accompagnare la serata' });
+
+    const grid = document.getElementById('tipsGrid');
+    grid.innerHTML = tips.map(t => `
+      <div class="tip-item">
+        <span class="tip-icon">${t.icon}</span>
+        <div class="tip-text">
+          <span class="tip-label">${t.label}</span>
+          <span class="tip-desc">${t.desc}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
   // Animate score circle on load
   document.addEventListener('DOMContentLoaded', () => {
     const circle = document.querySelector('.score-circle .fg');
@@ -731,6 +845,7 @@
     circle.style.strokeDasharray = circumference;
     circle.style.strokeDashoffset = circumference;
     setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+    generateTips();
   });
 </script>
 </body>
