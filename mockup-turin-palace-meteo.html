@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meteo — La Terrazza | Turin Palace Hotel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #5B7186;
+    --primary-light: #7A95AA;
+    --primary-dark: #3E5466;
+    --bg: #FAFAF8;
+    --bg-card: #FFFFFF;
+    --bg-card-alt: #F5F3EF;
+    --text: #222222;
+    --text-secondary: #777777;
+    --text-muted: #AAAAAA;
+    --accent-green: #8B9E6B;
+    --accent-gold: #C4A35A;
+    --accent-red: #A0522D;
+    --border: #E8E4DD;
+    --shadow: 0 2px 12px rgba(91,113,134,0.08);
+    --shadow-lg: 0 8px 32px rgba(91,113,134,0.12);
+    --radius: 12px;
+    --radius-lg: 20px;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Inter', system-ui, sans-serif;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-theme="dark"] {
+    --bg: #1E2D38;
+    --bg-card: #283D4A;
+    --bg-card-alt: #2E4555;
+    --text: #E8E4DD;
+    --text-secondary: #A0B0BC;
+    --text-muted: #6B8090;
+    --border: #3A5060;
+    --shadow: 0 2px 12px rgba(0,0,0,0.2);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    transition: background var(--transition), color var(--transition);
+  }
+
+  /* === HEADER === */
+  .header {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .header-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+  }
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+  }
+  .header-subtitle {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+  }
+  .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .btn-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all var(--transition);
+  }
+  .btn-icon:hover { border-color: var(--primary); color: var(--primary); }
+
+  /* === MAIN === */
+  .main { max-width: 800px; margin: 0 auto; padding: 1.5rem; }
+
+  /* === HERO TERRAZZA === */
+  .hero-terrazza {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    color: white;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-terrazza::before {
+    content: '';
+    position: absolute;
+    top: -40%;
+    right: -20%;
+    width: 300px;
+    height: 300px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+  }
+  .hero-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 400;
+    margin-bottom: 1.5rem;
+  }
+  .hero-content { display: flex; gap: 2rem; align-items: center; flex-wrap: wrap; }
+
+  /* Score circle */
+  .score-circle {
+    width: 120px; height: 120px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .score-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .score-circle .bg { fill: none; stroke: rgba(255,255,255,0.15); stroke-width: 8; }
+  .score-circle .fg { fill: none; stroke: var(--accent-gold); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 314; stroke-dashoffset: 47; transition: stroke-dashoffset 1s ease; }
+  .score-value {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+  .score-number { font-size: 2rem; font-weight: 600; line-height: 1; }
+  .score-label { font-size: 0.65rem; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* Verdict & metrics */
+  .hero-details { flex: 1; min-width: 200px; }
+  .verdict {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-style: italic;
+    margin-bottom: 1rem;
+    opacity: 0.95;
+  }
+  .metric-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+    font-size: 0.85rem;
+  }
+  .metric-icon { width: 20px; text-align: center; opacity: 0.7; }
+  .metric-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .metric-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.8s ease;
+  }
+  .metric-bar.good { background: var(--accent-green); }
+  .metric-bar.warn { background: var(--accent-gold); }
+  .metric-bar.bad { background: var(--accent-red); }
+  .metric-val { min-width: 50px; text-align: right; font-weight: 500; font-size: 0.8rem; }
+
+  .hero-time {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.15);
+    font-size: 0.75rem;
+    opacity: 0.7;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* === LIVE DATA CARDS === */
+  .live-section { margin-bottom: 1.5rem; }
+  .section-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    padding-left: 0.25rem;
+  }
+  .live-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+  .live-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: all var(--transition);
+  }
+  .live-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .live-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .live-value { font-size: 1.5rem; font-weight: 600; color: var(--primary); }
+  .live-unit { font-size: 0.75rem; color: var(--text-secondary); }
+  .live-label { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+  /* === FORECAST STRIP === */
+  .forecast-section { margin-bottom: 1.5rem; }
+  .forecast-strip {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    -webkit-overflow-scrolling: touch;
+  }
+  .forecast-strip::-webkit-scrollbar { height: 3px; }
+  .forecast-strip::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .forecast-day {
+    flex: 0 0 85px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+  }
+  .forecast-day:hover, .forecast-day.active {
+    border-color: var(--primary);
+    box-shadow: var(--shadow);
+  }
+  .forecast-day.active { background: var(--primary); color: white; }
+  .forecast-day.active .fd-date { color: rgba(255,255,255,0.7); }
+  .forecast-day.active .fd-rain { color: rgba(255,255,255,0.6); }
+  .fd-name { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .fd-date { font-size: 0.6rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+  .fd-icon { font-size: 1.5rem; margin: 0.25rem 0; }
+  .fd-temps { font-size: 0.85rem; font-weight: 500; margin-top: 0.25rem; }
+  .fd-hi { color: var(--accent-red); }
+  .fd-lo { color: var(--primary-light); }
+  .fd-rain { font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem; }
+  .fd-badge {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .fd-badge.good { background: var(--accent-green); }
+  .fd-badge.warn { background: var(--accent-gold); }
+  .fd-badge.bad { background: var(--accent-red); }
+
+  /* === DAY DETAIL === */
+  .day-detail { margin-bottom: 1.5rem; }
+  .detail-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1rem;
+  }
+  .detail-title {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+  }
+  .detail-sun {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  /* Conditions strip */
+  .conditions-strip {
+    display: flex;
+    overflow-x: auto;
+    gap: 0;
+    margin-bottom: 1.25rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .cond-hour {
+    flex: 0 0 60px;
+    padding: 0.5rem 0.25rem;
+    text-align: center;
+    border-right: 1px solid var(--border);
+    font-size: 0.7rem;
+    transition: background var(--transition);
+  }
+  .cond-hour:last-child { border-right: none; }
+  .cond-hour:hover { background: var(--bg-card-alt); }
+  .ch-time { font-weight: 500; }
+  .ch-icon { font-size: 1.1rem; margin: 0.15rem 0; }
+  .ch-temp { font-weight: 600; color: var(--primary); }
+  .ch-rain { color: var(--text-muted); font-size: 0.6rem; }
+
+  /* Chart containers */
+  .chart-section { margin-bottom: 1.25rem; }
+  .chart-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+  }
+  .chart-placeholder {
+    width: 100%;
+    height: 100px;
+    background: var(--bg-card-alt);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  /* SVG Charts */
+  .chart-svg { width: 100%; height: 100px; }
+  .chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .chart-area { opacity: 0.15; }
+  .chart-dot { r: 3; }
+  .chart-grid { stroke: var(--border); stroke-width: 0.5; }
+  .chart-label-text { font-size: 9px; fill: var(--text-muted); font-family: var(--font-body); }
+
+  /* === COMPARISON TABLE === */
+  .comparison-section { margin-bottom: 1.5rem; }
+  .comparison-toggle {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all var(--transition);
+  }
+  .comparison-toggle:hover { border-color: var(--primary); color: var(--primary); }
+  .comparison-body {
+    display: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 1rem;
+    overflow-x: auto;
+  }
+  .comparison-body.open { display: block; }
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.75rem;
+  }
+  .comp-table th {
+    text-align: left;
+    padding: 0.5rem;
+    border-bottom: 2px solid var(--border);
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.65rem;
+  }
+  .comp-table td {
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .comp-table tr:last-child td { border-bottom: none; }
+
+  /* === FOOTER === */
+  .footer {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    margin-top: 2rem;
+  }
+  .footer a { color: var(--primary); text-decoration: none; }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 600px) {
+    .hero-content { flex-direction: column; align-items: stretch; }
+    .score-circle { margin: 0 auto; }
+    .live-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    .live-card { padding: 0.75rem 0.5rem; }
+    .live-value { font-size: 1.2rem; }
+    .main { padding: 1rem; }
+    .hero-terrazza { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-brand">
+    <div class="header-logo">☀</div>
+    <div>
+      <div class="header-title">Meteo — La Terrazza</div>
+      <div class="header-subtitle">Turin Palace Hotel · Torino</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="toggleTheme()" title="Tema chiaro/scuro" id="themeBtn">🌙</button>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- HERO TERRAZZA -->
+  <section class="hero-terrazza">
+    <div class="hero-label">Stasera sulla terrazza</div>
+    <div class="hero-title">Condizioni per cenare all'aperto</div>
+    <div class="hero-content">
+      <div class="score-circle">
+        <svg viewBox="0 0 120 120">
+          <circle class="bg" cx="60" cy="60" r="50"/>
+          <circle class="fg" cx="60" cy="60" r="50"/>
+        </svg>
+        <div class="score-value">
+          <div class="score-number">85</div>
+          <div class="score-label">su 100</div>
+        </div>
+      </div>
+      <div class="hero-details">
+        <div class="verdict">"Serata ideale per la terrazza"</div>
+        <div class="metric-row">
+          <span class="metric-icon">🌡</span>
+          <span>Temperatura</span>
+          <div class="metric-bar-wrap"><div class="metric-bar good" style="width:85%"></div></div>
+          <span class="metric-val">22°C</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-icon">💨</span>
+          <span>Vento</span>
+          <div class="metric-bar-wrap"><div class="metric-bar good" style="width:25%"></div></div>
+          <span class="metric-val">8 km/h</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-icon">🌧</span>
+          <span>Pioggia</span>
+          <div class="metric-bar-wrap"><div class="metric-bar good" style="width:10%"></div></div>
+          <span class="metric-val">5%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-icon">💧</span>
+          <span>Umidità</span>
+          <div class="metric-bar-wrap"><div class="metric-bar warn" style="width:55%"></div></div>
+          <span class="metric-val">55%</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-time">
+      <span>Fascia oraria: 19:00 – 23:00</span>
+      <span>Aggiornato: 18:30</span>
+    </div>
+  </section>
+
+  <!-- LIVE DATA -->
+  <section class="live-section">
+    <div class="section-label">La Terrazza — Live · ITURIN3276</div>
+    <div class="live-grid">
+      <div class="live-card">
+        <div class="live-icon">🌡</div>
+        <div class="live-value">23.4<span class="live-unit">°C</span></div>
+        <div class="live-label">Temperatura</div>
+      </div>
+      <div class="live-card">
+        <div class="live-icon">💧</div>
+        <div class="live-value">52<span class="live-unit">%</span></div>
+        <div class="live-label">Umidità</div>
+      </div>
+      <div class="live-card">
+        <div class="live-icon">💨</div>
+        <div class="live-value">7.2<span class="live-unit">km/h</span></div>
+        <div class="live-label">Vento</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORECAST STRIP -->
+  <section class="forecast-section">
+    <div class="section-label">Previsioni 8 giorni</div>
+    <div class="forecast-strip">
+      <div class="forecast-day active">
+        <div class="fd-badge good"></div>
+        <div class="fd-name">Oggi</div>
+        <div class="fd-date">22 Feb</div>
+        <div class="fd-icon">⛅</div>
+        <div class="fd-temps"><span class="fd-hi">24°</span> <span class="fd-lo">14°</span></div>
+        <div class="fd-rain">5%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge good"></div>
+        <div class="fd-name">Lun</div>
+        <div class="fd-date">23 Feb</div>
+        <div class="fd-icon">☀️</div>
+        <div class="fd-temps"><span class="fd-hi">26°</span> <span class="fd-lo">15°</span></div>
+        <div class="fd-rain">0%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge warn"></div>
+        <div class="fd-name">Mar</div>
+        <div class="fd-date">24 Feb</div>
+        <div class="fd-icon">🌤</div>
+        <div class="fd-temps"><span class="fd-hi">23°</span> <span class="fd-lo">13°</span></div>
+        <div class="fd-rain">15%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge bad"></div>
+        <div class="fd-name">Mer</div>
+        <div class="fd-date">25 Feb</div>
+        <div class="fd-icon">🌧</div>
+        <div class="fd-temps"><span class="fd-hi">18°</span> <span class="fd-lo">11°</span></div>
+        <div class="fd-rain">75%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge bad"></div>
+        <div class="fd-name">Gio</div>
+        <div class="fd-date">26 Feb</div>
+        <div class="fd-icon">🌧</div>
+        <div class="fd-temps"><span class="fd-hi">16°</span> <span class="fd-lo">10°</span></div>
+        <div class="fd-rain">80%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge warn"></div>
+        <div class="fd-name">Ven</div>
+        <div class="fd-date">27 Feb</div>
+        <div class="fd-icon">⛅</div>
+        <div class="fd-temps"><span class="fd-hi">20°</span> <span class="fd-lo">12°</span></div>
+        <div class="fd-rain">25%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge good"></div>
+        <div class="fd-name">Sab</div>
+        <div class="fd-date">28 Feb</div>
+        <div class="fd-icon">☀️</div>
+        <div class="fd-temps"><span class="fd-hi">25°</span> <span class="fd-lo">14°</span></div>
+        <div class="fd-rain">5%</div>
+      </div>
+      <div class="forecast-day">
+        <div class="fd-badge good"></div>
+        <div class="fd-name">Dom</div>
+        <div class="fd-date">1 Mar</div>
+        <div class="fd-icon">☀️</div>
+        <div class="fd-temps"><span class="fd-hi">26°</span> <span class="fd-lo">15°</span></div>
+        <div class="fd-rain">0%</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DAY DETAIL -->
+  <section class="day-detail">
+    <div class="detail-card">
+      <div class="detail-header">
+        <div class="detail-title">Oggi, 22 Febbraio</div>
+        <div class="detail-sun">☀ 07:12 — 🌙 18:04</div>
+      </div>
+
+      <!-- Hourly conditions -->
+      <div class="conditions-strip">
+        <div class="cond-hour"><div class="ch-time">08</div><div class="ch-icon">🌤</div><div class="ch-temp">15°</div><div class="ch-rain">0%</div></div>
+        <div class="cond-hour"><div class="ch-time">10</div><div class="ch-icon">⛅</div><div class="ch-temp">18°</div><div class="ch-rain">5%</div></div>
+        <div class="cond-hour"><div class="ch-time">12</div><div class="ch-icon">☀️</div><div class="ch-temp">22°</div><div class="ch-rain">0%</div></div>
+        <div class="cond-hour"><div class="ch-time">14</div><div class="ch-icon">☀️</div><div class="ch-temp">24°</div><div class="ch-rain">0%</div></div>
+        <div class="cond-hour"><div class="ch-time">16</div><div class="ch-icon">⛅</div><div class="ch-temp">23°</div><div class="ch-rain">5%</div></div>
+        <div class="cond-hour"><div class="ch-time">18</div><div class="ch-icon">🌤</div><div class="ch-temp">21°</div><div class="ch-rain">5%</div></div>
+        <div class="cond-hour"><div class="ch-time">20</div><div class="ch-icon">🌙</div><div class="ch-temp">19°</div><div class="ch-rain">5%</div></div>
+        <div class="cond-hour"><div class="ch-time">22</div><div class="ch-icon">🌙</div><div class="ch-temp">17°</div><div class="ch-rain">10%</div></div>
+      </div>
+
+      <!-- Temperature chart -->
+      <div class="chart-section">
+        <div class="chart-label">Temperatura</div>
+        <svg class="chart-svg" viewBox="0 0 700 100">
+          <line class="chart-grid" x1="0" y1="25" x2="700" y2="25"/>
+          <line class="chart-grid" x1="0" y1="50" x2="700" y2="50"/>
+          <line class="chart-grid" x1="0" y1="75" x2="700" y2="75"/>
+          <text class="chart-label-text" x="2" y="23">24°</text>
+          <text class="chart-label-text" x="2" y="48">20°</text>
+          <text class="chart-label-text" x="2" y="73">16°</text>
+          <path class="chart-area" d="M50,70 L150,52 L250,25 L350,15 L450,20 L550,35 L650,55 L700,65 L700,95 L50,95Z" fill="#5B7186"/>
+          <polyline class="chart-line" stroke="#5B7186" points="50,70 150,52 250,25 350,15 450,20 550,35 650,55"/>
+          <circle class="chart-dot" fill="#5B7186" cx="50" cy="70"/><circle class="chart-dot" fill="#5B7186" cx="150" cy="52"/>
+          <circle class="chart-dot" fill="#5B7186" cx="250" cy="25"/><circle class="chart-dot" fill="#5B7186" cx="350" cy="15"/>
+          <circle class="chart-dot" fill="#5B7186" cx="450" cy="20"/><circle class="chart-dot" fill="#5B7186" cx="550" cy="35"/>
+          <circle class="chart-dot" fill="#5B7186" cx="650" cy="55"/>
+        </svg>
+      </div>
+
+      <!-- Precipitation chart -->
+      <div class="chart-section">
+        <div class="chart-label">Precipitazioni</div>
+        <svg class="chart-svg" viewBox="0 0 700 100">
+          <line class="chart-grid" x1="0" y1="50" x2="700" y2="50"/>
+          <text class="chart-label-text" x="2" y="48">0.5mm</text>
+          <rect x="30" y="90" width="60" height="5" rx="2" fill="#5B7186" opacity="0.3"/>
+          <rect x="130" y="85" width="60" height="10" rx="2" fill="#5B7186" opacity="0.4"/>
+          <rect x="230" y="92" width="60" height="3" rx="2" fill="#5B7186" opacity="0.2"/>
+          <rect x="330" y="92" width="60" height="3" rx="2" fill="#5B7186" opacity="0.2"/>
+          <rect x="430" y="88" width="60" height="7" rx="2" fill="#5B7186" opacity="0.3"/>
+          <rect x="530" y="85" width="60" height="10" rx="2" fill="#5B7186" opacity="0.4"/>
+          <rect x="630" y="80" width="60" height="15" rx="2" fill="#5B7186" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <!-- Wind chart -->
+      <div class="chart-section">
+        <div class="chart-label">Vento</div>
+        <svg class="chart-svg" viewBox="0 0 700 100">
+          <line class="chart-grid" x1="0" y1="50" x2="700" y2="50"/>
+          <text class="chart-label-text" x="2" y="48">10 km/h</text>
+          <path class="chart-area" d="M50,65 L150,55 L250,50 L350,45 L450,50 L550,60 L650,55 L700,58 L700,95 L50,95Z" fill="#C4A35A"/>
+          <polyline class="chart-line" stroke="#C4A35A" points="50,65 150,55 250,50 350,45 450,50 550,60 650,55"/>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON (collapsed) -->
+  <section class="comparison-section">
+    <button class="comparison-toggle" onclick="toggleComparison()">
+      <span>Per esperti — Confronto modelli</span>
+      <span id="compArrow">▶</span>
+    </button>
+    <div class="comparison-body" id="compBody">
+      <table class="comp-table">
+        <thead>
+          <tr>
+            <th>Modello</th>
+            <th>Temp max</th>
+            <th>Pioggia</th>
+            <th>Vento</th>
+            <th>Affidabilità</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>ECMWF IFS</td><td>24.2°</td><td>0.1 mm</td><td>8 km/h</td><td style="color:var(--accent-green)">Alta</td></tr>
+          <tr><td>GFS</td><td>24.8°</td><td>0.0 mm</td><td>10 km/h</td><td style="color:var(--accent-green)">Alta</td></tr>
+          <tr><td>ICON-EU</td><td>23.5°</td><td>0.3 mm</td><td>7 km/h</td><td style="color:var(--accent-green)">Alta</td></tr>
+          <tr><td>AROME</td><td>24.1°</td><td>0.2 mm</td><td>9 km/h</td><td style="color:var(--accent-gold)">Media</td></tr>
+          <tr><td>COSMO</td><td>23.8°</td><td>0.5 mm</td><td>8 km/h</td><td style="color:var(--accent-gold)">Media</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <p>Meteo — La Terrazza · Turin Palace Hotel</p>
+  <p style="margin-top:0.25rem">Powered by <a href="#">PantaMeteo</a> · 13 modelli · Calibrazione ERA5</p>
+</footer>
+
+<script>
+  function toggleTheme() {
+    const body = document.body;
+    const btn = document.getElementById('themeBtn');
+    if (body.getAttribute('data-theme') === 'dark') {
+      body.removeAttribute('data-theme');
+      btn.textContent = '🌙';
+    } else {
+      body.setAttribute('data-theme', 'dark');
+      btn.textContent = '☀️';
+    }
+  }
+
+  function toggleComparison() {
+    const body = document.getElementById('compBody');
+    const arrow = document.getElementById('compArrow');
+    body.classList.toggle('open');
+    arrow.textContent = body.classList.contains('open') ? '▼' : '▶';
+  }
+
+  // Animate score circle on load
+  document.addEventListener('DOMContentLoaded', () => {
+    const circle = document.querySelector('.score-circle .fg');
+    const circumference = 2 * Math.PI * 50; // r=50
+    const score = 85;
+    const offset = circumference - (score / 100) * circumference;
+    circle.style.strokeDasharray = circumference;
+    circle.style.strokeDashoffset = circumference;
+    setTimeout(() => { circle.style.strokeDashoffset = offset; }, 100);
+  });
+</script>
+</body>
+</html>
